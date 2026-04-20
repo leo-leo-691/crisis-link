@@ -21,154 +21,196 @@ export default function VenueMap({ zones = [], incidents = [], selectedZone, onZ
   };
 
   const sevColors = {
-    critical: { fill: 'rgba(230,57,70,0.4)',  stroke: '#E63946', glow: true },
-    high:     { fill: 'rgba(244,162,97,0.3)', stroke: '#F4A261', glow: false },
-    medium:   { fill: 'rgba(250,204,21,0.25)',stroke: '#FACC15', glow: false },
-    low:      { fill: 'rgba(45,198,83,0.2)',  stroke: '#2DC653', glow: false },
+    critical: { fill: 'rgba(230,57,70,0.4)',  stroke: '#E63946', glow: true, pulse: true },
+    high:     { fill: 'rgba(244,162,97,0.3)', stroke: '#F4A261', glow: false, pulse: false },
+    medium:   { fill: 'rgba(250,204,21,0.25)',stroke: '#FACC15', glow: false, pulse: false },
+    low:      { fill: 'rgba(45,198,83,0.2)',  stroke: '#2DC653', glow: false, pulse: false },
   };
 
+  const getHeatmapColor = (count, max) => {
+    if (!count) return { fill: 'rgba(255,255,255,0.02)', stroke: 'rgba(255,255,255,0.08)' };
+    const opacity = Math.min(0.2 + (count / max) * 0.7, 0.8);
+    return {
+      fill: `rgba(69, 123, 157, ${opacity})`,
+      stroke: `rgba(168, 218, 220, ${opacity + 0.1})`,
+      glow: opacity > 0.4
+    };
+  };
+
+  const maxCount = Math.max(...zones.map(z => z.count || 0), 1);
+
   return (
-    <div className="relative select-none">
+    <div className="relative select-none overflow-hidden rounded-xl border border-white/5 shadow-2xl">
+      <style jsx>{`
+        @keyframes scan {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
+        }
+        .scan-line {
+          position: absolute;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(to right, transparent, rgba(69,123,157,0.2), transparent);
+          box-shadow: 0 0 15px rgba(69,123,157,0.1);
+          animation: scan 8s linear infinite;
+          z-index: 5;
+          pointer-events: none;
+        }
+      `}</style>
+      
+      <div className="scan-line" />
+
       <svg
         viewBox="0 0 830 500"
-        className="w-full rounded-xl border border-white/10"
-        style={{ background: 'linear-gradient(135deg, #0d1220 0%, #141929 100%)' }}
+        className="w-full bg-[#070b14]"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Background grid */}
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
           </pattern>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="0.5" fill="rgba(255,255,255,0.05)" />
+          </pattern>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
+           <linearGradient id="zoneGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
         </defs>
-        <rect width="830" height="500" fill="url(#grid)" />
 
-        {/* Floor label */}
-        <text x="20" y="30" fill="rgba(255,255,255,0.2)" fontSize="11" fontFamily="Inter, sans-serif" fontWeight="600">
-          Grand Hotel — Emergency Overlay
+        <rect width="830" height="500" fill="url(#grid)" />
+        <rect width="830" height="500" fill="url(#dots)" />
+
+        <text x="35" y="42" fill="white" fontSize="12" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1">
+          {mode === 'heatmap' ? 'ANALYTICS HEATMAP' : 'E.O.C. OVERLAY'} <tspan fill="rgba(255,255,255,0.4)" fontWeight="400">v2.4.0</tspan>
         </text>
 
-        {/* Floor sections */}
-        <text x="20" y="130" fill="rgba(255,255,255,0.2)" fontSize="9" fontFamily="monospace">ROOMS</text>
-        <text x="20" y="250" fill="rgba(255,255,255,0.2)" fontSize="9" fontFamily="monospace">AMENITIES</text>
-        <text x="20" y="370" fill="rgba(255,255,255,0.2)" fontSize="9" fontFamily="monospace">GROUND</text>
-
         {zones.map(zone => {
+          const zoneName = zone.name || zone.zone;
           if (!zone.map_x) return null;
-          const sev = getSeverityForZone(zone.name);
-          const cfg = sev ? sevColors[sev] : null;
-          const isSelected = selectedZone === zone.name;
-          const count = activeByZone[zone.name] || 0;
+          
+          let cfg;
+          let currentCount = 0;
+
+          if (mode === 'heatmap') {
+            currentCount = zone.count || 0;
+            cfg = getHeatmapColor(currentCount, maxCount);
+          } else {
+            const sev = getSeverityForZone(zoneName);
+            cfg = sev ? sevColors[sev] : null;
+            currentCount = activeByZone[zoneName] || 0;
+          }
 
           return (
             <g
-              key={zone.id}
-              onClick={() => onZoneClick?.(zone.name)}
+              key={zone.id || zoneName}
+              onClick={() => onZoneClick?.(zoneName)}
+              className="transition-all duration-300"
               style={{ cursor: 'pointer' }}
               onMouseEnter={(e) => {
-                const rect = e.currentTarget.closest('svg').getBoundingClientRect();
-                setTooltip({ name: zone.name, x: zone.map_x + zone.map_width / 2, y: zone.map_y, count, sev });
+                setTooltip({ name: zoneName, x: zone.map_x + zone.map_width / 2, y: zone.map_y, count: currentCount });
               }}
               onMouseLeave={() => setTooltip(null)}
             >
+              {cfg?.pulse && (
+                <rect
+                  x={zone.map_x - 4}
+                  y={zone.map_y - 4}
+                  width={zone.map_width + 8}
+                  height={zone.map_height + 8}
+                  rx={10}
+                  fill="none"
+                  stroke={cfg.stroke}
+                  strokeWidth="2"
+                  className="animate-ping"
+                  opacity="0.3"
+                  style={{ animationDuration: '2s' }}
+                />
+              )}
+
               <rect
                 x={zone.map_x}
                 y={zone.map_y}
                 width={zone.map_width}
                 height={zone.map_height}
-                rx={6}
-                fill={cfg ? cfg.fill : (isSelected ? 'rgba(69,123,157,0.2)' : 'rgba(255,255,255,0.03)')}
-                stroke={cfg ? cfg.stroke : (isSelected ? '#457B9D' : 'rgba(255,255,255,0.1)')}
-                strokeWidth={isSelected ? 2 : 1}
+                rx={8}
+                fill={cfg ? cfg.fill : 'rgba(255,255,255,0.02)'}
+                stroke={cfg ? cfg.stroke : 'rgba(255,255,255,0.08)'}
+                strokeWidth={cfg ? 2 : 1}
                 filter={cfg?.glow ? 'url(#glow)' : undefined}
+                className="transition-colors duration-500"
               />
-              {/* Zone name */}
+              
               <text
                 x={zone.map_x + zone.map_width / 2}
-                y={zone.map_y + zone.map_height / 2 - (count > 0 ? 6 : 0)}
+                y={zone.map_y + zone.map_height / 2 - (currentCount > 0 ? 8 : 0)}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={sev ? (sev === 'critical' ? '#FF8080' : '#FACC15') : 'rgba(255,255,255,0.7)'}
-                fontSize={zone.map_width > 100 ? '10' : '8'}
+                fill={cfg?.stroke && mode !== 'heatmap' ? 'white' : 'rgba(255,255,255,0.4)'}
+                fontSize="10"
                 fontFamily="Inter, sans-serif"
-                fontWeight="500"
+                fontWeight="700"
+                className="uppercase tracking-wide"
               >
-                {zone.name}
+                {zoneName}
               </text>
-              {/* Active incident count */}
-              {count > 0 && (
-                <>
+
+              {currentCount > 0 && (
+                <g>
+                   <rect
+                    x={zone.map_x + zone.map_width / 2 - 25}
+                    y={zone.map_y + zone.map_height / 2 + 4}
+                    width="50"
+                    height="14"
+                    rx="4"
+                    fill="rgba(0,0,0,0.2)"
+                  />
                   <text
                     x={zone.map_x + zone.map_width / 2}
-                    y={zone.map_y + zone.map_height / 2 + 8}
+                    y={zone.map_y + zone.map_height / 2 + 11}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill="rgba(255,255,255,0.5)"
+                    fill={cfg?.stroke || 'white'}
                     fontSize="8"
-                    fontFamily="Inter, sans-serif"
+                    fontWeight="800"
                   >
-                    {count} active
+                    {currentCount} {mode === 'heatmap' ? 'TOTAL' : 'ACTIVE'}
                   </text>
-                  {/* Pulsing dot for critical */}
-                  {sev === 'critical' && (
-                    <circle
-                      cx={zone.map_x + zone.map_width - 8}
-                      cy={zone.map_y + 8}
-                      r="4"
-                      fill="#E63946"
-                      opacity="0.9"
-                    />
-                  )}
-                </>
+                </g>
               )}
             </g>
           );
         })}
 
-        {/* Tooltip */}
         {tooltip && (
           <g>
             <rect
-              x={tooltip.x - 60}
-              y={tooltip.y - 36}
-              width="120"
-              height="26"
-              rx="4"
-              fill="rgba(20,25,41,0.95)"
-              stroke="rgba(255,255,255,0.15)"
+              x={tooltip.x - 70}
+              y={tooltip.y - 45}
+              width="140"
+              height="30"
+              rx="6"
+              fill="rgba(13,18,32,0.95)"
+              stroke="rgba(255,255,255,0.2)"
               strokeWidth="1"
             />
             <text
               x={tooltip.x}
-              y={tooltip.y - 23}
+              y={tooltip.y - 25}
               textAnchor="middle"
               fill="white"
-              fontSize="9"
-              fontFamily="Inter, sans-serif"
-              fontWeight="600"
+              fontSize="10"
+              fontWeight="700"
+              className="uppercase"
             >
-              {tooltip.name} {tooltip.count > 0 ? `— ${tooltip.count} active` : '— clear'}
+              {tooltip.name} {tooltip.count > 0 ? `× ${tooltip.count}` : ''}
             </text>
           </g>
         )}
-
-        {/* Legend */}
-        {[
-          { sev: 'critical', label: 'Critical', color: '#E63946' },
-          { sev: 'high',     label: 'High',     color: '#F4A261' },
-          { sev: 'medium',   label: 'Medium',   color: '#FACC15' },
-          { sev: 'low',      label: 'Low',      color: '#2DC653' },
-        ].map((l, i) => (
-          <g key={l.sev} transform={`translate(${20 + i * 90}, 460)`}>
-            <rect width="12" height="12" rx="2" fill={l.color} opacity="0.4" />
-            <rect width="12" height="12" rx="2" fill="none" stroke={l.color} strokeWidth="1.5" />
-            <text x="16" y="10" fill="rgba(255,255,255,0.6)" fontSize="9" fontFamily="Inter, sans-serif">{l.label}</text>
-          </g>
-        ))}
       </svg>
     </div>
   );

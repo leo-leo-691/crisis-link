@@ -1,17 +1,17 @@
 const { NextResponse } = require('next/server');
 
-module.exports.GET = async function GET(request, { params }) {
+export async function GET(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { id } = params;
-    const messages = db.prepare('SELECT * FROM incident_messages WHERE incident_id = ? ORDER BY created_at ASC').all(id);
-    return NextResponse.json({ messages });
+    const result = await db.query('SELECT * FROM incident_messages WHERE incident_id = $1 ORDER BY created_at ASC', [id]);
+    return NextResponse.json({ messages: result.rows });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}
 
-module.exports.POST = async function POST(request, { params }) {
+export async function POST(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { getIO } = require('@/lib/socket');
@@ -23,12 +23,18 @@ module.exports.POST = async function POST(request, { params }) {
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
     const senderName = user?.name || sender_name || 'Anonymous';
-    const result = db.prepare('INSERT INTO incident_messages (incident_id, user_id, sender_name, message) VALUES (?, ?, ?, ?)')
-      .run(id, user?.id || null, senderName, message);
+    
+    // Insert message with RETURNING to get full object
+    const result = await db.query(
+      'INSERT INTO incident_messages (incident_id, user_id, sender_name, message) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, user?.id || null, senderName, message]
+    );
+    const msg = result.rows[0];
 
-    const msg = db.prepare('SELECT * FROM incident_messages WHERE id = ?').get(result.lastInsertRowid);
-    db.prepare('INSERT INTO incident_timeline (incident_id, actor, action) VALUES (?, ?, ?)')
-      .run(id, senderName, `Message: "${message.slice(0, 60)}"`);
+    // Add timeline entry
+    await db.query('INSERT INTO incident_timeline (incident_id, actor, action) VALUES ($1, $2, $3)', [
+      id, senderName, `Message: "${message.slice(0, 60)}"`
+    ]);
 
     const io = getIO();
     if (io) io.to(`incident:${id}`).emit('incident:message', { incidentId: id, message: msg });
@@ -37,4 +43,4 @@ module.exports.POST = async function POST(request, { params }) {
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

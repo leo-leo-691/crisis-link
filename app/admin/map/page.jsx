@@ -16,7 +16,7 @@ function MapContent() {
   const user    = useAuthStore(s => s.user);
   const loading = useAuthStore(s => s.loading);
   const router  = useRouter();
-  const { incidents, fetchIncidents } = useIncidentStore();
+  const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const socket = useSocketStore(s => s.socket);
   const [selected, setSelected] = useState(null);
 
@@ -25,13 +25,16 @@ function MapContent() {
   }, [user, loading]);
 
   useEffect(() => {
-    if (user) fetchIncidents({});
+    if (user) {
+      fetchIncidents({});
+      fetchZones();
+    }
   }, [user]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.on('incident:created', () => fetchIncidents({}));
-    socket.on('incident:updated', () => fetchIncidents({}));
+    socket.on('incident:created', () => { fetchIncidents({}); fetchZones(); });
+    socket.on('incident:updated', () => { fetchIncidents({}); fetchZones(); });
     return () => {
       socket.off('incident:created');
       socket.off('incident:updated');
@@ -43,26 +46,38 @@ function MapContent() {
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-grid">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
+      <main className="flex-1 overflow-y-auto bg-grid relative">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-4 flex items-center gap-4">
           <div>
-            <h1 className="font-bold text-white">Venue Map</h1>
-            <p className="text-xs text-muted">Live incident overlay · {activeIncidents.length} active</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">Venue Intelligence Map</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-xs text-muted font-medium uppercase tracking-wider">Live Operation Overlay · {activeIncidents.length} active</p>
+            </div>
           </div>
           <div className="ml-auto">
-            <div className="flex items-center gap-4 text-xs text-muted">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emergency" /> Critical</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> High</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> Medium</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-steelblue" /> Low</span>
+            <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-muted">
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-emergency/40 border border-emergency shadow-[0_0_8px_rgba(230,57,70,0.5)]" /> Critical</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-orange-400/30 border border-orange-400 shadow-[0_0_8px_rgba(244,162,97,0.4)]" /> High</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-yellow-400/30 border border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.4)]" /> Medium</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-steelblue/30 border border-steelblue" /> Low</span>
             </div>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="glass p-4">
-            <VenueMap incidents={activeIncidents} mode="live" onSelectZone={(zone) => setSelected(zone)} />
+        <div className="p-8 max-w-[1400px] mx-auto">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-steelblue/10 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-50 transition" />
+            <div className="relative glass p-2 rounded-2xl border border-white/5 shadow-2xl">
+              <VenueMap 
+                zones={zones} 
+                incidents={activeIncidents} 
+                mode="live" 
+                onZoneClick={(zone) => setSelected(zone)} 
+              />
+            </div>
           </div>
+
 
           {selected && (
             <div className="mt-4 glass p-4">

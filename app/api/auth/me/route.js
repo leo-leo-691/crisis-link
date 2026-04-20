@@ -1,6 +1,6 @@
 const { NextResponse } = require('next/server');
 
-module.exports.GET = async function GET(request) {
+export async function GET(request) {
   try {
     const { getUserFromRequest } = require('@/lib/auth');
     const db = require('@/lib/db');
@@ -8,7 +8,8 @@ module.exports.GET = async function GET(request) {
     const decoded = getUserFromRequest(request);
     if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = db.prepare('SELECT id, email, name, role, zone_assignment FROM users WHERE id = ? AND is_active = 1').get(decoded.id);
+    const result = await db.query('SELECT id, email, name, role, zone_assignment FROM users WHERE id = $1 AND is_active = TRUE', [decoded.id]);
+    const user = result.rows[0];
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     return NextResponse.json({ user });

@@ -14,7 +14,7 @@ const DESCRIPTIONS = {
 const REPORTERS = ['James Miller', 'Sarah B.', 'Anonymous Guest', 'Room 412', 'Restaurant Staff'];
 
 // POST /api/demo/trigger — inject a simulated incident for demo autopilot
-module.exports.POST = async function POST(request) {
+export async function POST(request) {
   try {
     const db = require('@/lib/db');
     const { analyzeIncident } = require('@/lib/aiTriage');
@@ -36,19 +36,23 @@ module.exports.POST = async function POST(request) {
 
     const { result: triage, provider } = await analyzeIncident(type, zone, desc);
 
-    db.prepare(`
+    await db.query(`
       INSERT INTO incidents (id, type, severity, status, zone, reporter_name, reporter_type, description, ai_triage, ai_provider, evacuation_route, is_drill, created_at, updated_at)
-      VALUES (?, ?, ?, 'reported', ?, ?, 'guest', ?, ?, ?, ?, 1, ?, ?)
-    `).run(id, type, triage?.severity || severity, zone, reporter, desc, triage ? JSON.stringify(triage) : null, provider, triage?.evacuation_route || null, now, now);
+      VALUES ($1, $2, $3, 'reported', $4, $5, 'guest', $6, $7, $8, $9, TRUE, $10, $11)
+    `, [id, type, triage?.severity || severity, zone, reporter, desc, triage ? JSON.stringify(triage) : null, provider, triage?.evacuation_route || null, now, now]);
 
-    // Seed SOP tasks
+    // Seed SOP tasks in parallel
     const tasks = SOP_TASKS[type] || SOP_TASKS.other;
-    for (const t of tasks) db.prepare('INSERT INTO incident_tasks (incident_id, title, priority) VALUES (?, ?, ?)').run(id, t, 'high');
+    await Promise.all(tasks.map(t => 
+      db.query('INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3)', [id, t, 'high'])
+    ));
 
-    db.prepare('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES (?, ?, ?, ?)')
-      .run(id, reporter, `[DEMO] Incident reported: ${desc.slice(0, 60)}`, now);
+    await db.query('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES ($1, $2, $3, $4)', [
+      id, reporter, `[DEMO] Incident reported: ${desc.slice(0, 60)}`, now
+    ]);
 
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const result = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const incident = result.rows[0];
     const io = getIO();
     if (io) io.emit('incident:new', incident);
 
@@ -57,4 +61,4 @@ module.exports.POST = async function POST(request) {
     console.error('[POST /api/demo/trigger]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

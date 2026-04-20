@@ -2,7 +2,7 @@ const { NextResponse } = require('next/server');
 
 const CRISISBOT_SYSTEM = `You are CrisisBot, an AI assistant embedded in a hotel emergency management platform. You help hotel staff and managers make decisions during emergency situations. You know about hotel emergency protocols, fire safety, medical first response, security incident management, evacuation procedures, and guest safety. Be concise, authoritative, and action-oriented. Always prioritize life safety. Do not give legal advice. Respond in 2-4 sentences unless more detail is specifically requested.`;
 
-module.exports.POST = async function POST(request) {
+export async function POST(request) {
   try {
     const { getUserFromRequest } = require('@/lib/auth');
     const user = getUserFromRequest(request);
@@ -53,4 +53,4 @@ module.exports.POST = async function POST(request) {
     console.error('[POST /api/crisisbot]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

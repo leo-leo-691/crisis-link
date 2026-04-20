@@ -1,7 +1,7 @@
 const { NextResponse } = require('next/server');
 
 // GET /api/export?format=json|csv — export all incident data
-module.exports.GET = async function GET(request) {
+export async function GET(request) {
   try {
     const db = require('@/lib/db');
     const { getUserFromRequest } = require('@/lib/auth');
@@ -11,7 +11,8 @@ module.exports.GET = async function GET(request) {
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'json';
 
-    const incidents = db.prepare('SELECT * FROM incidents ORDER BY created_at DESC').all();
+    const result = await db.query('SELECT * FROM incidents ORDER BY created_at DESC');
+    const incidents = result.rows;
 
     if (format === 'csv') {
       const headers = Object.keys(incidents[0] || {}).join(',');
@@ -36,4 +37,4 @@ module.exports.GET = async function GET(request) {
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

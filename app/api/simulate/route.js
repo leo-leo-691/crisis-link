@@ -7,8 +7,16 @@ const { logAudit } = require('@/lib/auditLogger');
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(request) {
   try {
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    
+    // Simulate is a high-risk endpoint for demo purposes only
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required for simulation' }, { status: 401 });
+    }
+
     const id = crypto.randomUUID();
     const title = "Simulated Demo: Kitchen Fire";
     const description = "Smoke reported near the main kitchen stoves.";
@@ -17,41 +25,48 @@ export async function POST() {
     const triageData = MOCK_SCENARIOS.fire;
 
     // Database Insert
-    const insert = db.prepare('INSERT INTO incidents (id, title, description, category, severity, zone, reporter_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    insert.run(id, title, description, triageData.category, triageData.severity, 'Kitchen Zone', 'demo_runner');
+    await db.query(
+      'INSERT INTO incidents (id, type, description, severity, zone, reporter_name, reporter_type, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [id, 'Fire', description, triageData.severity, 'Kitchen Zone', 'SimRunner', 'staff', 'reported']
+    );
 
     if (triageData.actions) {
-      const taskInsert = db.prepare('INSERT INTO tasks (id, incident_id, title) VALUES (?, ?, ?)');
-      triageData.actions.forEach(action => {
-        taskInsert.run(crypto.randomUUID(), id, action);
-      });
+      for (const action of triageData.actions) {
+        await db.query('INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3)', [id, action, 'high']);
+      }
     }
 
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const incResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const incident = incResult.rows[0];
     logAudit('CREATE_SIMULATION', 'incident', id);
 
     // Simulated flow over websockets
-    if (global.io) {
-      global.io.emit('new_incident', incident);
-      global.io.emit('broadcast', { type: 'ALERT', message: `DEMO STARTED: ${title}` });
+    const io = (require('@/lib/socket')).getIO();
+    if (io) {
+      io.emit('incident:new', incident);
+      io.emit('broadcast', { message: `DEMO STARTED: Kitchen Fire`, target_role: 'all', timestamp: new Date().toISOString() });
       
       // Delay Assignment update
-      setTimeout(() => {
-        const ack = db.prepare("UPDATE incidents SET status = 'Acknowledged', acknowledged_at = CURRENT_TIMESTAMP WHERE id = ?");
-        ack.run(id);
-        const updated = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
-        global.io.emit('incident_updated', updated);
-        logAudit('SCENARIO_RUNNER', 'incident', id, { status: "Acknowledged" });
-        
-        // Delay resolved update
-        setTimeout(() => {
-          const res = db.prepare("UPDATE incidents SET status = 'Resolved', resolved_at = CURRENT_TIMESTAMP WHERE id = ?");
-          res.run(id);
-          const final = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
-          global.io.emit('incident_updated', final);
-          global.io.emit('broadcast', { type: 'INFO', message: 'Demo scenario resolved successfully.' });
-          logAudit('SCENARIO_RUNNER', 'incident', id, { status: "Resolved" });
-        }, 5000);
+      setTimeout(async () => {
+        try {
+          await db.query("UPDATE incidents SET status = 'acknowledged', updated_at = NOW() WHERE id = $1", [id]);
+          const upRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+          const updated = upRes.rows[0];
+          io.emit('incident:update', updated);
+          logAudit('SCENARIO_RUNNER', 'incident', id, { status: "acknowledged" });
+          
+          // Delay resolved update
+          setTimeout(async () => {
+             try {
+                await db.query("UPDATE incidents SET status = 'resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = $1", [id]);
+                const finRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+                const final = finRes.rows[0];
+                io.emit('incident:update', final);
+                io.emit('broadcast', { message: 'Demo scenario resolved successfully.', target_role: 'all', timestamp: new Date().toISOString() });
+                logAudit('SCENARIO_RUNNER', 'incident', id, { status: "resolved" });
+             } catch (e) { console.error('Sim resolution error', e); }
+          }, 5000);
+        } catch (e) { console.error('Sim ack error', e); }
       }, 3000);
     }
     

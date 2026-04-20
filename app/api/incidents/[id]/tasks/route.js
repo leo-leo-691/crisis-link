@@ -1,17 +1,17 @@
 const { NextResponse } = require('next/server');
 
-module.exports.GET = async function GET(request, { params }) {
+export async function GET(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { id } = params;
-    const tasks = db.prepare('SELECT * FROM incident_tasks WHERE incident_id = ? ORDER BY id ASC').all(id);
-    return NextResponse.json({ tasks });
+    const result = await db.query('SELECT * FROM incident_tasks WHERE incident_id = $1 ORDER BY id ASC', [id]);
+    return NextResponse.json({ tasks: result.rows });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}
 
-module.exports.POST = async function POST(request, { params }) {
+export async function POST(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { getIO } = require('@/lib/socket');
@@ -20,13 +20,16 @@ module.exports.POST = async function POST(request, { params }) {
 
     if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
-    const result = db.prepare('INSERT INTO incident_tasks (incident_id, title, priority) VALUES (?, ?, ?)')
-      .run(id, title, priority);
-    const task = db.prepare('SELECT * FROM incident_tasks WHERE id = ?').get(result.lastInsertRowid);
+    const result = await db.query(
+      'INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3) RETURNING *',
+      [id, title, priority]
+    );
+    const task = result.rows[0];
 
     // Add timeline
-    db.prepare('INSERT INTO incident_timeline (incident_id, actor, action) VALUES (?, ?, ?)')
-      .run(id, 'System', `Task added: "${title}"`);
+    await db.query('INSERT INTO incident_timeline (incident_id, actor, action) VALUES ($1, $2, $3)', [
+      id, 'System', `Task added: "${title}"`
+    ]);
 
     const io = getIO();
     if (io) io.to(`incident:${id}`).emit('incident:task', task);
@@ -35,4 +38,4 @@ module.exports.POST = async function POST(request, { params }) {
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

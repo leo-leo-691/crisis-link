@@ -1,23 +1,25 @@
 const { NextResponse } = require('next/server');
 
 // PATCH /api/incidents/[id]/tasks/[taskId] — toggle complete
-module.exports.PATCH = async function PATCH(request, { params }) {
+export async function PATCH(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { id, taskId } = params;
-    const task = db.prepare('SELECT * FROM incident_tasks WHERE id = ? AND incident_id = ?').get(taskId, id);
-    if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const newState = task.is_complete ? 0 : 1;
-    db.prepare('UPDATE incident_tasks SET is_complete = ? WHERE id = ?').run(newState, taskId);
-    const updated = db.prepare('SELECT * FROM incident_tasks WHERE id = ?').get(taskId);
-    return NextResponse.json({ task: updated });
+    // Toggle logic in SQL using RETURNING
+    const result = await db.query(
+      'UPDATE incident_tasks SET is_complete = NOT is_complete WHERE id = $1 AND incident_id = $2 RETURNING *',
+      [taskId, id]
+    );
+    
+    if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ task: result.rows[0] });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}
 
-module.exports.DELETE = async function DELETE(request, { params }) {
+export async function DELETE(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { getUserFromRequest } = require('@/lib/auth');
@@ -25,9 +27,9 @@ module.exports.DELETE = async function DELETE(request, { params }) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { taskId } = params;
-    db.prepare('DELETE FROM incident_tasks WHERE id = ?').run(taskId);
+    await db.query('DELETE FROM incident_tasks WHERE id = $1', [taskId]);
     return NextResponse.json({ message: 'Deleted' });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

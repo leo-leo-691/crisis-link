@@ -96,11 +96,19 @@ function IncidentDetail() {
     finally { setChatSending(false); }
   };
 
-  if (!data) return (
+  if (!data || !data.incident) return (
     <div className="flex h-screen bg-navy">
       <Sidebar />
-      <main className="flex-1 flex items-center justify-center text-muted">
-        <div className="skeleton w-12 h-12 rounded-full" />
+      <main className="flex-1 flex flex-col items-center justify-center text-muted gap-4">
+        {!data ? (
+          <div className="skeleton w-12 h-12 rounded-full" />
+        ) : (
+          <>
+            <p className="text-xl">⚠️ Incident Not Found</p>
+            <p className="text-sm opacity-60">The requested incident ID does not exist or was deleted.</p>
+            <button onClick={() => router.push('/admin/dashboard')} className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white">Return to Dashboard</button>
+          </>
+        )}
       </main>
     </div>
   );

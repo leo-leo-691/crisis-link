@@ -8,7 +8,7 @@ const VALID_TRANSITIONS = {
   resolved:     [],
 };
 
-module.exports.PATCH = async function PATCH(request, { params }) {
+export async function PATCH(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { getIO } = require('@/lib/socket');
@@ -18,7 +18,8 @@ module.exports.PATCH = async function PATCH(request, { params }) {
     const { status } = await request.json();
     const user = getUserFromRequest(request);
 
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const incResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const incident = incResult.rows[0];
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const allowed = VALID_TRANSITIONS[incident.status] || [];
@@ -32,15 +33,18 @@ module.exports.PATCH = async function PATCH(request, { params }) {
     const now = new Date().toISOString();
     const resolvedAt = status === 'resolved' ? now : incident.resolved_at;
 
-    db.prepare('UPDATE incidents SET status = ?, updated_at = ?, resolved_at = ? WHERE id = ?')
-      .run(status, now, resolvedAt, id);
+    await db.query('UPDATE incidents SET status = $1, updated_at = $2, resolved_at = $3 WHERE id = $4', [
+      status, now, resolvedAt, id
+    ]);
 
     // Timeline entry
     const actorName = user?.name || 'System';
-    db.prepare('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES (?, ?, ?, ?)')
-      .run(id, actorName, `Status changed to "${status}"`, now);
+    await db.query('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES ($1, $2, $3, $4)', [
+      id, actorName, `Status changed to "${status}"`, now
+    ]);
 
-    const updated = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const upResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const updated = upResult.rows[0];
     const io = getIO();
     if (io) io.emit('incident:updated', updated);
 
@@ -49,4 +53,4 @@ module.exports.PATCH = async function PATCH(request, { params }) {
     console.error('[PATCH /api/incidents/:id/status]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-};
+}

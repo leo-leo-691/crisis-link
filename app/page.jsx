@@ -50,6 +50,9 @@ function HomeContent() {
   const loading = useAuthStore(s => s.loading);
   const router  = useRouter();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   useEffect(() => {
     if (!loading && user) {
       if (user.role === 'admin') router.replace('/admin/dashboard');
@@ -126,7 +129,7 @@ function HomeContent() {
 
           {/* Login form */}
           <div className="px-8 py-6">
-            <LoginForm />
+            <LoginForm email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
           </div>
 
           {/* Demo accounts */}
@@ -136,7 +139,11 @@ function HomeContent() {
             </p>
             <div className="flex gap-2">
               {DEMO_ACCOUNTS.map(acc => (
-                <DemoChip key={acc.email} account={acc} />
+                <DemoChip 
+                  key={acc.email} 
+                  account={acc} 
+                  onSelect={(e, p) => { setEmail(e); setPassword(p); }} 
+                />
               ))}
             </div>
           </div>
@@ -184,11 +191,9 @@ function HomeContent() {
 }
 
 /* ── Login Form ──────────────────────────────────────── */
-function LoginForm() {
+function LoginForm({ email, setEmail, password, setPassword }) {
   const login   = useAuthStore(s => s.login);
   const router  = useRouter();
-  const [email,    setEmail]    = useState('admin@grandhotel.com');
-  const [password, setPassword] = useState('demo1234');
   const [showPw,   setShowPw]   = useState(false);
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
@@ -276,24 +281,10 @@ function LoginForm() {
 }
 
 /* ── Demo Account Chip ───────────────────────────────── */
-function DemoChip({ account }) {
-  const login  = useAuthStore(s => s.login);
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      const user = await login(account.email, account.password);
-      if (user.role === 'admin') router.push('/admin/dashboard');
-      else router.push('/staff/dashboard');
-    } catch { /* ignore */ } finally { setLoading(false); }
-  };
-
+function DemoChip({ account, onSelect }) {
   return (
     <button
-      onClick={handleClick}
-      disabled={loading}
+      onClick={() => onSelect(account.email, account.password)}
       className="flex-1 text-center py-2 px-2 rounded-lg transition-all hover:-translate-y-0.5"
       style={{
         background: account.color,

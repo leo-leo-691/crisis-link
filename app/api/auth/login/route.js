@@ -1,6 +1,6 @@
 const { NextResponse } = require('next/server');
 
-module.exports.POST = async function POST(request) {
+export async function POST(request) {
   try {
     const db = require('@/lib/db');
     const bcrypt = require('bcrypt');
@@ -11,7 +11,8 @@ module.exports.POST = async function POST(request) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email.toLowerCase().trim());
+    const result = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = TRUE', [email.toLowerCase().trim()]);
+    const user = result.rows[0];
     if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
     const valid = await bcrypt.compare(password, user.password_hash);
