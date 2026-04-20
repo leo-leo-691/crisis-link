@@ -44,18 +44,43 @@
    npm install
    ```
 
-3. **Set up Environment Variables**
-   Create a `.env.local` file in the root directory:
-   ```env
-   GEMINI_API_KEY=your_google_gemini_key_here
-   NEXTAUTH_SECRET=your_random_secret_here
-   ```
+### 3. Set up Environment Variables
+Create a `.env.local` file in the root directory:
+```env
+GEMINI_API_KEY=your_google_gemini_key_here
+NEXTAUTH_SECRET=your_random_secret_here
+
+# Required for Live Deployment
+DATABASE_URL=your_supabase_postgres_url
+```
 
 4. **Run the development server**
    ```bash
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) to see the platform in action.
+
+---
+
+## 🚀 Live Deployment (Supabase & Cloud Run)
+
+CrisisLink is designed to be highly scalable using **Supabase** for the database and **Google Cloud Run** for hosting.
+
+### 1. Supabase Setup
+- Create a new project at [Supabase](https://supabase.com/).
+- Navigate to **Project Settings > Database** and copy your **Connection String** (URI).
+- Provide this as `DATABASE_URL` in your environment.
+
+### 2. Google Cloud Run Deployment
+For the **Google Solution Challenge**, we recommend deploying to Cloud Run to leverage Google's global infrastructure:
+1. Build the Docker image:
+   ```bash
+   gcloud builds submit --tag gcr.io/[PROJECT_ID]/crisislink
+   ```
+2. Deploy to Cloud Run:
+   ```bash
+   gcloud run deploy crisislink --image gcr.io/[PROJECT_ID]/crisislink --platform managed --allow-unauthenticated
+   ```
 
 ---
 
