@@ -165,7 +165,6 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GEMINI_API_KEY=your_gemini_api_key
 JWT_SECRET=any_random_string_minimum_32_characters
 NODE_ENV=development
-PORT=3000
 ```
 
 4. Set up database
@@ -179,7 +178,7 @@ npm run dev
 
 6. Open your browser
 ```text
-http://localhost:3000
+http://localhost:[Port]
 ```
 
 ---
@@ -352,7 +351,6 @@ crisislink/
 - [Supabase](https://supabase.com)
 - [Next.js](https://nextjs.org)
 - [Socket.IO](https://socket.io)
-- [Vercel](https://vercel.com)
 
 ---
 
