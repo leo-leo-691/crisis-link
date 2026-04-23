@@ -26,6 +26,8 @@ function IncidentsListContent() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -58,10 +60,23 @@ function IncidentsListContent() {
       
       const matchesStatus = statusFilter === 'all' || inc.status === statusFilter;
       const matchesSeverity = severityFilter === 'all' || inc.severity === severityFilter;
+      const createdAt = inc.created_at ? new Date(inc.created_at) : null;
+      const fromOk = !fromDate || (createdAt && createdAt >= new Date(`${fromDate}T00:00:00`));
+      const toOk = !toDate || (createdAt && createdAt <= new Date(`${toDate}T23:59:59`));
 
-      return matchesSearch && matchesStatus && matchesSeverity;
+      return matchesSearch && matchesStatus && matchesSeverity && fromOk && toOk;
     });
-  }, [incidents, search, statusFilter, severityFilter]);
+  }, [incidents, search, statusFilter, severityFilter, fromDate, toDate]);
+
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify(filteredIncidents, null, 2)], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = `incidents-export-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(href);
+  };
 
   if (!user) return null;
 
@@ -150,6 +165,27 @@ function IncidentsListContent() {
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </select>
+
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                style={{ fontSize: 14 }}
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                style={{ fontSize: 14 }}
+              />
+              <button
+                onClick={exportJson}
+                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-sm"
+              >
+                Export JSON
+              </button>
             </div>
 
             {/* Results Counters */}

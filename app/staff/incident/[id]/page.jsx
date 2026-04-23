@@ -23,12 +23,13 @@ function StaffIncidentDetailContent() {
   const { user } = useAuthStore();
   const router = useRouter();
   const { id } = useParams();
-  const { fetchIncident } = useIncidentStore();
+  const { fetchIncident, updateStatus } = useIncidentStore();
   const joinIncident = useSocketStore(s => s.joinIncident);
   const data = useIncidentStore(s => s.activeIncident);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showHandoffModal, setShowHandoffModal] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState('');
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -72,6 +73,39 @@ function StaffIncidentDetailContent() {
       alert('Handoff report copied.');
     } catch (e) {
       alert('Failed to copy handoff report.');
+    }
+  };
+
+  const STATUS_ACTIONS = [
+    { key: 'acknowledge', label: 'Acknowledge', nextStatus: 'acknowledged' },
+    { key: 'start-response', label: 'Start Response', nextStatus: 'responding' },
+    { key: 'mark-contained', label: 'Mark Contained', nextStatus: 'contained' },
+    { key: 'resolve', label: 'Resolve', nextStatus: 'resolved' },
+  ];
+
+  const canApplyStatus = (target) => {
+    if (!incident) return false;
+    if (incident.status === target || incident.status === 'resolved') return false;
+    const allowedMap = {
+      reported: ['acknowledged', 'responding', 'resolved'],
+      acknowledged: ['responding', 'contained', 'resolved'],
+      responding: ['contained', 'resolved'],
+      contained: ['resolved'],
+      resolved: [],
+    };
+    return (allowedMap[incident.status] || []).includes(target);
+  };
+
+  const handleStatusAction = async (targetStatus) => {
+    if (!incident || !canApplyStatus(targetStatus)) return;
+    try {
+      setUpdatingStatus(targetStatus);
+      await updateStatus(id, targetStatus);
+      await fetchIncident(id);
+    } catch (error) {
+      console.error('Failed to update status', error);
+    } finally {
+      setUpdatingStatus('');
     }
   };
 
@@ -126,6 +160,19 @@ function StaffIncidentDetailContent() {
                   <DetailRow label="Status" value={incident.status} />
                   <DetailRow label="Reporter" value={incident.reporter_name || 'Unknown'} />
                   <DetailRow label="Timestamp" value={new Date(incident.created_at).toLocaleString()} />
+                </div>
+                <div className="pt-2 border-t border-white/10 flex flex-wrap gap-2">
+                  {STATUS_ACTIONS.map((action) => (
+                    <button
+                      key={action.key}
+                      data-action={action.key}
+                      onClick={() => handleStatusAction(action.nextStatus)}
+                      disabled={!canApplyStatus(action.nextStatus) || updatingStatus === action.nextStatus}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-steelblue/20 border border-steelblue/30 hover:bg-steelblue/35 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                    >
+                      {updatingStatus === action.nextStatus ? 'Updating...' : action.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

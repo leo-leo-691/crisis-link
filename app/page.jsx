@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import useAuthStore from '@/lib/stores/authStore';
+import { motion } from 'framer-motion';
 
 export default function HomePage() {
   return (
@@ -18,6 +19,9 @@ const DEMO_ACCOUNTS = [
   { email: 'manager@grandhotel.com',password: 'demo1234', role: 'Manager',  color: 'rgba(244,162,97,0.18)',  border: 'rgba(244,162,97,0.38)',  textColor: '#F4A261' },
   { email: 'staff@grandhotel.com',  password: 'demo1234', role: 'Staff',    color: 'rgba(69,123,157,0.20)',  border: 'rgba(69,123,157,0.40)',  textColor: '#7DBFEF' },
 ];
+
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.15 } } };
+const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } };
 
 // RECENT_ACTIVITY static data removed in favor of live fetch
 
@@ -50,6 +54,9 @@ function HomeContent() {
   const [password, setPassword] = useState('');
   const [recentIncidents, setRecentIncidents] = useState([]);
   const [activeCount, setActiveCount] = useState(0);
+  const [demoStarting, setDemoStarting] = useState(false);
+  const [demoCountdown, setDemoCountdown] = useState(3);
+  const [demoComplete, setDemoComplete] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -73,6 +80,64 @@ function HomeContent() {
     const interval = setInterval(fetchPublicIncidents, 10000); // Poll every 10s
     return () => clearInterval(interval);
   }, []);
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const startDemo = async () => {
+    if (demoStarting) return;
+    try {
+      setDemoStarting(true);
+      setDemoCountdown(3);
+      for (let sec = 3; sec >= 1; sec -= 1) {
+        setDemoCountdown(sec);
+        await wait(1000);
+      }
+
+      const res = await fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'medical',
+          zone: 'Restaurant',
+          reporter_name: 'Demo Guest',
+          description: 'Guest collapsed near table 12, unconscious',
+          reporter_type: 'guest',
+          is_drill: 1,
+        }),
+      });
+      const payload = await res.json();
+      const incidentId = payload?.incident?.id;
+      if (!incidentId) throw new Error(payload?.error || 'Failed to create demo incident');
+
+      router.push('/staff/dashboard');
+      await wait(3000);
+      router.push(`/staff/incident/${incidentId}`);
+      await wait(2000);
+      document.querySelector('[data-action="acknowledge"]')?.click();
+      await wait(3000);
+      document.querySelector('[data-action="start-response"]')?.click();
+      await wait(2000);
+      document.querySelector('input[type="checkbox"]')?.click();
+      await wait(2000);
+      document.querySelector('[data-action="mark-contained"]')?.click();
+      await wait(2000);
+      document.querySelector('[data-action="resolve"]')?.click();
+      await wait(1000);
+      setDemoComplete(true);
+    } catch (err) {
+      console.error('Demo autopilot failed', err);
+    } finally {
+      setDemoStarting(false);
+    }
+  };
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.key === 'd' || event.key === 'D') startDemo();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [demoStarting]);
 
   const formatIncident = (inc) => {
     let icon = '⚠️';
@@ -167,14 +232,24 @@ function HomeContent() {
             <p className="mono text-center" style={{ fontSize: 10, color: 'rgba(232,234,240,0.30)', letterSpacing: '0.08em' }}>
               DEMO ACCOUNTS — CLICK TO AUTO-FILL
             </p>
-            <div className="flex gap-2">
+            <motion.div className="flex gap-2" variants={container} initial="hidden" animate="show">
               {DEMO_ACCOUNTS.map(acc => (
+                <motion.div key={acc.email} variants={item}>
                 <DemoChip 
                   key={acc.email} 
                   account={acc} 
                   onSelect={(e, p) => { setEmail(e); setPassword(p); }} 
                 />
+                </motion.div>
               ))}
+            </motion.div>
+            <div className="pt-2 flex justify-center">
+              <button
+                onClick={startDemo}
+                className="border border-emergency text-emergency hover:bg-emergency hover:text-white transition-all px-8 py-3 rounded-xl font-semibold"
+              >
+                ▶ Watch Live Demo
+              </button>
             </div>
           </div>
 
@@ -222,6 +297,29 @@ function HomeContent() {
           </div>
         </div>
       </div>
+
+      {demoStarting && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="glass-strong p-8 text-center border border-white/15 rounded-2xl min-w-[320px]">
+            <p className="text-2xl mb-2">🎬 Demo Starting...</p>
+            <p className="text-4xl font-bold text-emergency">{demoCountdown}</p>
+          </div>
+        </div>
+      )}
+
+      {demoComplete && (
+        <div className="fixed inset-0 z-50 bg-green-900/70 flex items-center justify-center p-4">
+          <div className="bg-green-900/80 border border-green-400/40 rounded-2xl p-8 text-center max-w-xl w-full">
+            <p className="text-2xl font-bold text-green-100">✅ Demo Complete — CrisisLink resolved the incident in 23 seconds</p>
+            <button
+              onClick={() => setDemoComplete(false)}
+              className="mt-4 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

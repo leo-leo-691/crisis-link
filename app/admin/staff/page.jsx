@@ -48,7 +48,10 @@ function AdminStaffContent() {
   }, [user]);
 
   const authHeader = useMemo(
-    () => ({ Authorization: `Bearer ${token || localStorage.getItem('crisislink_token')}` }),
+    () => {
+      const browserToken = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : null;
+      return { Authorization: `Bearer ${token || browserToken || ''}` };
+    },
     [token]
   );
 

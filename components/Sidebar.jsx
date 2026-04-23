@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/lib/stores/authStore';
 import useSocketStore from '@/lib/stores/socketStore';
 import useUIStore from '@/lib/stores/uiStore';
@@ -30,6 +30,7 @@ const NAV_ADMIN = [
 const NAV_STAFF = [
   { href: '/staff/dashboard', icon: '◼', emoji: '📊', label: 'Dashboard' },
   { href: '/staff/incidents', icon: '!', emoji: '🚨', label: 'Incidents' },
+  { href: '/staff/drill', icon: '*', emoji: '🧪', label: 'Drill' },
 ];
 
 export default function Sidebar() {
@@ -41,6 +42,7 @@ export default function Sidebar() {
   const isDark     = useUIStore(s => s.isDarkMode);
   const toggleDark = useUIStore(s => s.toggleDark);
   const pathname   = usePathname();
+  const router = useRouter();
   const incidents  = useIncidentStore(s => s.incidents);
 
   const activeCount = incidents.filter(i => i.status !== 'resolved').length;
@@ -199,7 +201,7 @@ export default function Sidebar() {
             )}
             {!collapsed && (
               <button
-                onClick={logout}
+                onClick={() => { logout(); router.push('/login'); }}
                 className="text-xs transition-colors hover:text-red-400"
                 style={{ color: 'rgba(232,234,240,0.28)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }}
               >

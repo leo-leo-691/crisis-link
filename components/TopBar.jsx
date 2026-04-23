@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/lib/stores/authStore';
 import useSocketStore from '@/lib/stores/socketStore';
 import useUIStore from '@/lib/stores/uiStore';
@@ -33,6 +33,7 @@ export default function TopBar() {
   const isDark     = useUIStore(s => s.isDarkMode);
   const toggleDark = useUIStore(s => s.toggleDark);
   const pathname   = usePathname();
+  const router = useRouter();
   const [showUser, setShowUser] = useState(false);
 
   const crumbs = getBreadcrumb(pathname);
@@ -145,7 +146,7 @@ export default function TopBar() {
               </div>
               <div style={{ height: 0.5, background: 'rgba(255,255,255,0.08)' }} />
               <button
-                onClick={() => { setShowUser(false); logout(); }}
+                onClick={() => { setShowUser(false); logout(); router.push('/login'); }}
                 className="w-full text-left px-2 py-2 rounded-lg transition-all hover:bg-red-500/10"
                 style={{ fontSize: 13, color: 'rgba(232,234,240,0.55)', background: 'none', border: 'none', cursor: 'pointer' }}
               >

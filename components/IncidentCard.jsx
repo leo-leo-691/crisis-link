@@ -1,4 +1,5 @@
 'use client';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ── Severity Config ─────────────────────────────────── */
 const SEV_CONFIG = {
@@ -138,12 +139,18 @@ export default function IncidentCard({ incident, onClick, index = 0 }) {
   const isCritical = incident.severity === 'critical';
 
   return (
-    <div
+    <AnimatePresence>
+    <motion.div
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && onClick?.()}
       className={`animate-slide-up cursor-pointer group ${isCritical ? 'emergency-flash' : ''}`}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ x: 4, transition: { duration: 0.15 } }}
       style={{
         background: 'rgba(255,255,255,0.035)',
         border: '0.5px solid rgba(255,255,255,0.09)',
@@ -153,16 +160,6 @@ export default function IncidentCard({ incident, onClick, index = 0 }) {
         transition: 'all 0.2s ease',
         animationDelay: `${index * 60}ms`,
         boxShadow: isCritical ? sev.glow : 'none',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateX(3px)';
-        e.currentTarget.style.background = 'rgba(255,255,255,0.055)';
-        e.currentTarget.style.borderColor = `${sev.leftBorder}55`;
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateX(0)';
-        e.currentTarget.style.background = 'rgba(255,255,255,0.035)';
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
       }}
     >
       {/* Top row */}
@@ -216,6 +213,7 @@ export default function IncidentCard({ incident, onClick, index = 0 }) {
           </span>
         </div>
       )}
-    </div>
+    </motion.div>
+    </AnimatePresence>
   );
 }

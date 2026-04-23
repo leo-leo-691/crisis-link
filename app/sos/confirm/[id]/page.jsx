@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 const STEP_LABELS = ['Reported', 'Acknowledged', 'Responding', 'Resolved'];
 
@@ -82,7 +83,14 @@ export default function IncidentConfirmPage() {
         style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(18px)' }}
       >
         <div className="text-center">
-          <div className="text-7xl text-green-400 checkmark-scale-in">✓</div>
+          <motion.div
+            className="text-7xl text-green-400 checkmark-scale-in"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+          >
+            ✓
+          </motion.div>
           <h1 className="text-3xl font-bold mt-3">Alert Received</h1>
           <p className="text-white/60 mt-2">Your emergency report is being actively tracked.</p>
         </div>

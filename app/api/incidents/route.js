@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyzeIncident, tryTranslation, getDispatchRecommendation } from '@/lib/aiTriage';
+import { analyzeIncident } from '@/lib/aiTriage';
 import { getIO } from '@/lib/socket';
 import { SOP_TASKS, query } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
@@ -150,17 +150,15 @@ export async function POST(request) {
         const staffResult = await query("SELECT * FROM users WHERE role = 'staff' AND is_active = TRUE");
         const staff = staffResult.rows;
 
-        const [triageResult, translationResult, dispatchResult] = await Promise.allSettled([
-          analyzeIncident(type, zone, descText),
-          tryTranslation(descText),
-          getDispatchRecommendation(id, type, zone, activeIncs, staff),
-        ]);
+        const triageResult = await analyzeIncident(type, zone, descText);
 
-        const triage = triageResult.status === 'fulfilled' ? triageResult.value.result : null;
-        const provider = triageResult.status === 'fulfilled' ? triageResult.value.provider : 'failure-fallback';
-        const translated = translationResult.status === 'fulfilled' ? translationResult.value.translated : descText;
-        const detected_language = translationResult.status === 'fulfilled' ? translationResult.value.detected_language : 'en';
-        const dispatchRec = dispatchResult.status === 'fulfilled' ? dispatchResult.value.recommended_name : null;
+        const triage = triageResult?.result || null;
+        const provider = triageResult?.provider || 'failure-fallback';
+        const translated = descText;
+        const detected_language = 'en';
+        const dispatchRec = staff.find(s => s.zone_assignment && zone.toLowerCase().includes((s.zone_assignment || '').toLowerCase()))?.name
+          || staff[0]?.name
+          || null;
 
         const aiSeverity = triage?.severity || severity;
         const evacRoute = triage?.evacuation_route || null;

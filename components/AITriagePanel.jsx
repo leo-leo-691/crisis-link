@@ -1,4 +1,5 @@
 'use client';
+import { motion } from 'framer-motion';
 
 const roleChipClass = 'text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-white/20 bg-white/10 text-white/85';
 const timeChipClass = 'text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-orange-500/30 bg-orange-500/15 text-orange-300';
@@ -11,18 +12,18 @@ export default function AITriagePanel({ triage, provider }) {
 
   return (
     <div className="glass p-5 space-y-4">
-      <h3 className="font-semibold text-sm text-white">
+      <motion.h3 className="font-semibold text-sm text-white" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 * 0.1 }}>
         AI Triage Analysis <span className="text-xs text-muted">({provider || '—'})</span>
-      </h3>
-      <p className="text-sm text-white/80">{triage.brief_summary}</p>
+      </motion.h3>
+      <motion.p className="text-sm text-white/80" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 * 0.1 }}>{triage.brief_summary}</motion.p>
 
-      <div className="grid grid-cols-2 gap-3 text-xs">
+      <motion.div className="grid grid-cols-2 gap-3 text-xs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2 * 0.1 }}>
         <Detail label="Est. Response Time" value={`${triage.estimated_response_time_minutes} min`} />
         <Detail label="Confidence" value={`${triage.confidence}%`} />
-      </div>
+      </motion.div>
 
       {triage.recommended_actions?.length > 0 && (
-        <div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3 * 0.1 }}>
           <p className="text-xs text-muted mb-2">Recommended Actions:</p>
           <ul className="space-y-1">
             {triage.recommended_actions.map((action, index) => (
@@ -32,11 +33,11 @@ export default function AITriagePanel({ triage, provider }) {
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
       )}
 
       {sop.length > 0 && (
-        <div className="space-y-2">
+        <motion.div className="space-y-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4 * 0.1 }}>
           <h4 className="text-[11px] font-mono uppercase tracking-widest text-white/70">STANDARD OPERATING PROCEDURE</h4>
           <ol className="space-y-2">
             {sop.map((item, index) => (
@@ -57,21 +58,21 @@ export default function AITriagePanel({ triage, provider }) {
               </li>
             ))}
           </ol>
-        </div>
+        </motion.div>
       )}
 
       {triage.evacuation_route && (
-        <div className="space-y-2">
+        <motion.div className="space-y-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 5 * 0.1 }}>
           <h4 className="text-[11px] font-mono uppercase tracking-widest text-white/70">EVACUATION ROUTE</h4>
           <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-3 flex items-start gap-2">
             <span className="text-green-300 text-sm leading-none mt-0.5">↗</span>
             <p className="text-sm text-green-100/90">{triage.evacuation_route}</p>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {doNotDo.length > 0 && (
-        <div className="space-y-2">
+        <motion.div className="space-y-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 6 * 0.1 }}>
           <h4 className="text-[11px] font-mono uppercase tracking-widest text-red-300">DO NOT DO</h4>
           <ul className="space-y-1.5">
             {doNotDo.map((rule, index) => (
@@ -81,7 +82,7 @@ export default function AITriagePanel({ triage, provider }) {
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
       )}
     </div>
   );

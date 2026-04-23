@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
+import { useMotionValue, useSpring, animate } from 'framer-motion';
 import useAuthStore from '@/lib/stores/authStore';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -15,11 +16,27 @@ export default function AnalyticsPage() {
 
 const PIE_COLORS = ['#E63946', '#F4A261', '#FACC15', '#2DC653', '#457B9D', '#8B9CB6'];
 
-function KpiCard({ label, value }) {
+function KpiCard({ label, value, suffix = '' }) {
+  const numericValue = Number(value) || 0;
+  const motionValue = useMotionValue(0);
+  const springValue = useSpring(motionValue, { damping: 24, stiffness: 160 });
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(motionValue, numericValue, { duration: 1 });
+    const unsubscribe = springValue.on('change', (latest) => {
+      setDisplayValue(Math.round(latest));
+    });
+    return () => {
+      controls.stop();
+      unsubscribe();
+    };
+  }, [numericValue]);
+
   return (
     <div className="glass p-4 border border-white/10 rounded-xl">
       <p className="text-[11px] text-muted uppercase tracking-wide">{label}</p>
-      <p className="text-[28px] leading-tight font-bold text-white mt-1">{value ?? '—'}</p>
+      <p className="text-[28px] leading-tight font-bold text-white mt-1">{displayValue}{suffix}</p>
     </div>
   );
 }
@@ -70,7 +87,7 @@ function AnalyticsContent() {
             <KpiCard label="Total Incidents" value={data?.totalIncidents} />
             <KpiCard label="Active Now" value={data?.activeIncidents} />
             <KpiCard label="Resolved" value={data?.resolvedIncidents} />
-            <KpiCard label="Avg Response Time" value={data?.avgResolutionMinutes != null ? `${data.avgResolutionMinutes}m` : '—'} />
+            <KpiCard label="Avg Response Time" value={data?.avgResolutionMinutes || 0} suffix="m" />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">

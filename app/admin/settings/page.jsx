@@ -17,16 +17,44 @@ function SettingsContent() {
   const drillMode    = useUIStore(s => s.drillMode);
   const toggleDrill  = useUIStore(s => s.toggleDrillMode);
   const addToast     = useUIStore(s => s.addToast);
+  const soundEnabled = useUIStore(s => s.soundEnabled);
+  const toggleSound  = useUIStore(s => s.toggleSound);
 
   const [testingAI, setTestingAI] = useState(false);
   const [aiResult, setAiResult]   = useState(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [sending, setSending]     = useState(false);
+  const [venueName, setVenueName] = useState('Grand Hotel & Resort');
+  const [venueAddress, setVenueAddress] = useState('123 Ocean Drive');
+  const [escalationTimeout, setEscalationTimeout] = useState(90);
+  const [zones, setZones] = useState([]);
+  const [newZone, setNewZone] = useState('');
+  const [notifPermission, setNotifPermission] = useState('default');
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    setNotifPermission(Notification.permission);
+  }, []);
+
+  useEffect(() => {
+    const loadZones = async () => {
+      try {
+        const res = await fetch('/api/zones', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
+        });
+        const payload = await res.json();
+        if (res.ok) setZones(payload.zones || []);
+      } catch (error) {
+        console.error('[Settings] zone load error', error);
+      }
+    };
+    loadZones();
+  }, []);
 
   const testAI = async () => {
     setTestingAI(true);
@@ -65,6 +93,63 @@ function SettingsContent() {
     } catch { addToast({ message: 'Seed failed', type: 'error' }); }
   };
 
+  const saveVenueInfo = () => {
+    addToast({ message: 'Venue info saved locally', type: 'success' });
+  };
+
+  const saveEscalationTimeout = () => {
+    addToast({ message: `Escalation timeout set to ${escalationTimeout} minutes`, type: 'success' });
+  };
+
+  const addZone = async () => {
+    if (!newZone.trim()) return;
+    try {
+      const res = await fetch('/api/zones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('crisislink_token')}`,
+        },
+        body: JSON.stringify({ name: newZone.trim() }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to add zone');
+      setZones((prev) => [...prev, payload.zone]);
+      setNewZone('');
+      addToast({ message: 'Zone added', type: 'success' });
+    } catch (error) {
+      addToast({ message: error.message || 'Failed to add zone', type: 'error' });
+    }
+  };
+
+  const deleteZone = async (zoneId) => {
+    try {
+      const res = await fetch(`/api/zones?id=${zoneId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to delete zone');
+      setZones((prev) => prev.filter((z) => z.id !== zoneId));
+      addToast({ message: 'Zone removed', type: 'success' });
+    } catch (error) {
+      addToast({ message: error.message || 'Failed to delete zone', type: 'error' });
+    }
+  };
+
+  const requestBrowserNotification = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      addToast({ message: 'Browser notifications unsupported', type: 'error' });
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotifPermission(permission);
+    addToast({
+      message: permission === 'granted' ? 'Notifications enabled' : 'Notifications not granted',
+      type: permission === 'granted' ? 'success' : 'error',
+    });
+  };
+
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
@@ -82,11 +167,83 @@ function SettingsContent() {
             <InfoRow label="Role"       value={user?.role} />
             <InfoRow label="Department" value={user?.department} />
             <button
-              onClick={() => { logout(); router.push('/'); }}
+              onClick={() => { logout(); router.push('/login'); }}
               className="mt-2 px-4 py-2 text-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all"
             >
               Sign Out
             </button>
+          </Section>
+
+          <Section title="Venue Info">
+            <input className="input-dark w-full text-sm" value={venueName} onChange={(e) => setVenueName(e.target.value)} placeholder="Venue Name" />
+            <input className="input-dark w-full text-sm" value={venueAddress} onChange={(e) => setVenueAddress(e.target.value)} placeholder="Address" />
+            <button onClick={saveVenueInfo} className="px-4 py-2 bg-steelblue/30 hover:bg-steelblue/50 border border-steelblue/40 text-white text-sm rounded-lg">
+              Save
+            </button>
+          </Section>
+
+          <Section title="Escalation Timeout">
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={1}
+                className="input-dark w-40 text-sm"
+                value={escalationTimeout}
+                onChange={(e) => setEscalationTimeout(Number(e.target.value) || 90)}
+              />
+              <span className="text-xs text-muted">minutes</span>
+            </div>
+            <button onClick={saveEscalationTimeout} className="px-4 py-2 bg-steelblue/30 hover:bg-steelblue/50 border border-steelblue/40 text-white text-sm rounded-lg">
+              Save
+            </button>
+          </Section>
+
+          <Section title="Zone Management">
+            <div className="space-y-2">
+              {zones.map((zone) => (
+                <div key={zone.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                  <span className="text-sm text-white">{zone.name}</span>
+                  <button
+                    onClick={() => deleteZone(zone.id)}
+                    className="px-2 py-1 text-xs rounded bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                className="input-dark flex-1 text-sm"
+                placeholder="Add new zone"
+                value={newZone}
+                onChange={(e) => setNewZone(e.target.value)}
+              />
+              <button onClick={addZone} className="px-4 py-2 bg-emergency/80 hover:bg-emergency text-white text-sm font-semibold rounded-lg">
+                Add Zone
+              </button>
+            </div>
+          </Section>
+
+          <Section title="Notifications">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={notifPermission === 'granted'}
+                onChange={requestBrowserNotification}
+                className="accent-steelblue"
+              />
+              <span className="text-sm text-white">
+                Browser notifications {notifPermission === 'granted' ? 'enabled' : 'disabled'}
+              </span>
+            </label>
+          </Section>
+
+          <Section title="Sound">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={soundEnabled} onChange={toggleSound} className="accent-steelblue" />
+              <span className="text-sm text-white">{soundEnabled ? 'Alert sounds enabled' : 'Alert sounds muted'}</span>
+            </label>
           </Section>
 
           {/* Drill mode */}

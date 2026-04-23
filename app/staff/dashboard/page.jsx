@@ -8,6 +8,7 @@ import VenueMap from '@/components/VenueMap';
 import useAuthStore from '@/lib/stores/authStore';
 import useIncidentStore from '@/lib/stores/incidentStore';
 import useSocketStore from '@/lib/stores/socketStore';
+import { AnimatePresence } from 'framer-motion';
 
 export default function StaffDashboard() {
   return <AppProviders><StaffContent /></AppProviders>;
@@ -113,6 +114,7 @@ function StaffContent() {
                 <p className="text-xs text-muted mt-1">No active incidents at this time</p>
               </div>
             ) : (
+              <AnimatePresence>
               <div className="space-y-3">
                 {mine.map(inc => (
                   <IncidentCard
@@ -122,6 +124,7 @@ function StaffContent() {
                   />
                 ))}
               </div>
+              </AnimatePresence>
             )}
           </section>
 
@@ -168,6 +171,7 @@ function StaffContent() {
             {zoneIncidents.length === 0 ? (
               <p className="text-xs text-muted">No active incidents in this zone.</p>
             ) : (
+              <AnimatePresence>
               <div className="space-y-3">
                 {zoneIncidents.map((inc) => (
                   <IncidentCard
@@ -177,6 +181,7 @@ function StaffContent() {
                   />
                 ))}
               </div>
+              </AnimatePresence>
             )}
           </aside>
         )}
