@@ -3,23 +3,23 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
-import { IncidentsByTypeChart, ZoneBarChart, TrendLineChart, HourlyBarChart } from '@/components/AnalyticsCharts';
-import VenueMap from '@/components/VenueMap';
 import useAuthStore from '@/lib/stores/authStore';
-import useSocketStore from '@/lib/stores/socketStore';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line
+} from 'recharts';
 
 export default function AnalyticsPage() {
   return <AppProviders><AnalyticsContent /></AppProviders>;
 }
 
-function StatPill({ label, value, color = 'bg-white/8', icon }) {
+const PIE_COLORS = ['#E63946', '#F4A261', '#FACC15', '#2DC653', '#457B9D', '#8B9CB6'];
+
+function KpiCard({ label, value }) {
   return (
-    <div className={`${color} border border-white/10 rounded-xl p-4 space-y-1`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xl">{icon}</span>
-        <span className="text-2xl font-extrabold text-white">{value ?? '—'}</span>
-      </div>
-      <p className="text-xs text-muted">{label}</p>
+    <div className="glass p-4 border border-white/10 rounded-xl">
+      <p className="text-[11px] text-muted uppercase tracking-wide">{label}</p>
+      <p className="text-[28px] leading-tight font-bold text-white mt-1">{value ?? '—'}</p>
     </div>
   );
 }
@@ -27,12 +27,10 @@ function StatPill({ label, value, color = 'bg-white/8', icon }) {
 function AnalyticsContent() {
   const { user } = useAuthStore();
   const router  = useRouter();
-  const token   = useAuthStore(s => s.token);
-  const liveAnalytics = useSocketStore(s => s.liveAnalytics);
+  const token = useAuthStore(s => s.token);
 
-  const [data, setData]     = useState(null);
+  const [data, setData] = useState(null);
   const [fetching, setFetching] = useState(true);
-  const [range, setRange]   = useState('7d');
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -42,21 +40,18 @@ function AnalyticsContent() {
   const load = async () => {
     setFetching(true);
     try {
-      const res = await fetch(`/api/analytics?range=${range}`, {
+      const res = await fetch('/api/analytics', {
         headers: { Authorization: `Bearer ${token || localStorage.getItem('crisislink_token')}` },
       });
       if (res.ok) setData(await res.json());
     } finally { setFetching(false); }
   };
 
-  useEffect(() => { if (user) load(); }, [user, range]);
+  useEffect(() => { if (user) load(); }, [user]);
 
-  // Merge with live analytics socket data
-  const summary  = liveAnalytics?.summary || data?.summary;
-  const byType   = data?.byType || [];
-  const byZone   = data?.byZone || [];
-  const trend    = data?.trend  || [];
-  const byHour   = data?.byHour || [];
+  const byType = data?.byType || [];
+  const byZone = data?.byZone || [];
+  const dailyCounts = data?.dailyCounts || [];
 
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
@@ -68,67 +63,73 @@ function AnalyticsContent() {
             <h1 className="font-bold text-white text-lg">Live Analytics</h1>
             <p className="text-xs text-muted">Incident insights &amp; venue heatmap</p>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            {['7d', '30d', 'all'].map(r => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-semibold transition-all
-                  ${range === r ? 'bg-steelblue/30 border border-steelblue/40 text-white' : 'text-muted hover:text-white border border-white/10'}`}
-              >
-                {r}
-              </button>
-            ))}
-            <button
-              id="btn-export-analytics"
-              onClick={() => window.open('/api/analytics?format=csv', '_blank')}
-              className="px-3 py-1.5 text-xs bg-white/6 hover:bg-white/12 border border-white/10 rounded-lg text-muted hover:text-white"
-            >
-              ⬇️ Export CSV
-            </button>
-          </div>
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Summary pills */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatPill icon="📋" label="Total Incidents" value={summary?.total}       />
-            <StatPill icon="🔴" label="Critical"        value={summary?.critical}    color="border-red-500/20 bg-red-500/5"  />
-            <StatPill icon="✅" label="Resolved"        value={summary?.resolved}    color="border-emerald-500/20 bg-emerald-500/5" />
-            <StatPill icon="⏱️" label="Avg Response"   value={data?.avgResponseMinutes != null ? `${data.avgResponseMinutes}m` : '—'} />
-            <StatPill icon="🔵" label="Drills"          value={summary?.drills}      color="border-purple-500/20 bg-purple-500/5" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <KpiCard label="Total Incidents" value={data?.totalIncidents} />
+            <KpiCard label="Active Now" value={data?.activeIncidents} />
+            <KpiCard label="Resolved" value={data?.resolvedIncidents} />
+            <KpiCard label="Avg Response Time" value={data?.avgResolutionMinutes != null ? `${data.avgResolutionMinutes}m` : '—'} />
           </div>
 
-          {/* Charts row */}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="glass p-5">
               <h3 className="text-sm font-semibold text-white mb-3">Incidents by Type</h3>
-              {fetching ? <div className="skeleton h-56 rounded-lg" /> : <IncidentsByTypeChart data={byType} />}
+              {fetching ? <div className="skeleton h-56 rounded-lg" /> : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={byType}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                    <XAxis dataKey="type" tick={{ fill: '#fff', fontSize: 11 }} />
+                    <YAxis tick={{ fill: '#fff', fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ background: '#101828', border: '1px solid rgba(255,255,255,0.1)' }}
+                      labelStyle={{ color: '#fff' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                    <Bar dataKey="count" fill="#E63946" radius={[6, 6, 0, 0]} animationBegin={0} animationDuration={800} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
             <div className="glass p-5">
-              <h3 className="text-sm font-semibold text-white mb-3">By Zone (Top 10)</h3>
-              {fetching ? <div className="skeleton h-56 rounded-lg" /> : <ZoneBarChart data={byZone.slice(0, 10)} />}
+              <h3 className="text-sm font-semibold text-white mb-3">By Zone (Top 6)</h3>
+              {fetching ? <div className="skeleton h-56 rounded-lg" /> : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={byZone} dataKey="count" nameKey="zone" cx="50%" cy="50%" outerRadius={90} animationBegin={0} animationDuration={800}>
+                      {byZone.map((entry, index) => (
+                        <Cell key={`${entry.zone}-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ background: '#101828', border: '1px solid rgba(255,255,255,0.1)' }}
+                      labelStyle={{ color: '#fff' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="glass p-5">
-              <h3 className="text-sm font-semibold text-white mb-3">Daily Trend</h3>
-              {fetching ? <div className="skeleton h-44 rounded-lg" /> : <TrendLineChart data={trend} />}
-            </div>
-            <div className="glass p-5">
-              <h3 className="text-sm font-semibold text-white mb-3">Incidents by Hour of Day</h3>
-              {fetching ? <div className="skeleton h-44 rounded-lg" /> : <HourlyBarChart data={byHour} />}
-            </div>
-          </div>
-
-          {/* Venue heatmap */}
           <div className="glass p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white">Venue Incident Heatmap</h3>
-              <p className="text-xs text-muted">Darker zones = more incidents</p>
-            </div>
-            <VenueMap incidents={[]} zones={byZone} mode="heatmap" />
+            <h3 className="text-sm font-semibold text-white mb-3">Daily Trend (30 Days)</h3>
+            {fetching ? <div className="skeleton h-56 rounded-lg" /> : (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={dailyCounts}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis dataKey="day" tick={{ fill: '#8B9CB6', fontSize: 10 }} />
+                  <YAxis tick={{ fill: '#8B9CB6', fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{ background: '#101828', border: '1px solid rgba(255,255,255,0.1)' }}
+                    labelStyle={{ color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="#E63946" strokeWidth={2.5} dot={{ fill: '#E63946', r: 2 }} animationBegin={0} animationDuration={800} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </main>

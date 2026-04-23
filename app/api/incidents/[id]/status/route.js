@@ -8,6 +8,55 @@ const VALID_TRANSITIONS = {
   resolved:     [],
 };
 
+const DEBRIEF_SYSTEM_PROMPT = 'You are a hospitality safety analyst. Return ONLY valid JSON with these exact keys: executive_summary (string, 2 sentences), what_went_well (array of 3 strings), areas_for_improvement (array of 3 strings), root_cause_analysis (string, one paragraph), recommendations (array of 4 strings), training_recommendations (array of 2 strings)';
+
+async function generateAndStoreDebrief(incidentId, incidentSnapshot) {
+  try {
+    const db = require('@/lib/db');
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const { getIO } = require('@/lib/socket');
+
+    if (!process.env.GEMINI_API_KEY) return;
+
+    const [timelineRes, tasksRes] = await Promise.all([
+      db.query('SELECT id FROM incident_timeline WHERE incident_id = $1', [incidentId]),
+      db.query('SELECT is_complete FROM incident_tasks WHERE incident_id = $1', [incidentId]),
+    ]);
+
+    const timelineCount = timelineRes.rows.length;
+    const tasksCompletedCount = tasksRes.rows.filter((task) => task.is_complete).length;
+    const resolutionTimeMinutes = Math.max(
+      1,
+      Math.round((Date.now() - new Date(incidentSnapshot.created_at).getTime()) / 60000)
+    );
+
+    const prompt = `${DEBRIEF_SYSTEM_PROMPT}
+
+Incident type: ${incidentSnapshot.type}
+Zone: ${incidentSnapshot.zone}
+Description: ${incidentSnapshot.description || 'N/A'}
+Resolution time in minutes: ${resolutionTimeMinutes}
+Timeline entries count: ${timelineCount}
+Tasks completed count: ${tasksCompletedCount}`;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const result = await model.generateContent(prompt);
+    const raw = result.response.text().replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+
+    const updateRes = await db.query(
+      'UPDATE incidents SET debrief_report = $1, updated_at = $2 WHERE id = $3 RETURNING *',
+      [JSON.stringify(parsed), new Date().toISOString(), incidentId]
+    );
+    const updatedWithDebrief = updateRes.rows[0];
+    const io = getIO();
+    if (io && updatedWithDebrief) io.emit('incident:updated', updatedWithDebrief);
+  } catch (error) {
+    console.error('[Auto Debrief] Failed to generate/store report:', error.message);
+  }
+}
+
 export async function PATCH(request, { params }) {
   try {
     const db = require('@/lib/db');
@@ -48,6 +97,11 @@ export async function PATCH(request, { params }) {
     const updated = upResult.rows[0];
     const io = getIO();
     if (io) io.emit('incident:updated', updated);
+
+    if (status === 'resolved') {
+      // Fire-and-forget generation to keep status update fast.
+      generateAndStoreDebrief(id, updated);
+    }
 
     return NextResponse.json({ incident: updated });
   } catch (err) {

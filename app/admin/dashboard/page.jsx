@@ -90,6 +90,9 @@ function DashboardContent() {
   const [analytics, setAnalytics] = useState(null);
   const [demoing, setDemoing]     = useState(false);
   const [filter, setFilter]       = useState('active');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [showBroadcastOverlay, setShowBroadcastOverlay] = useState(false);
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -137,6 +140,30 @@ function DashboardContent() {
   };
 
   const criticalIncCount = criticalInc.length;
+
+  const sendBroadcast = async () => {
+    if (!broadcastMessage.trim() || sendingBroadcast) return;
+    try {
+      setSendingBroadcast(true);
+      const res = await fetch('/api/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('crisislink_token')}`,
+        },
+        body: JSON.stringify({ message: broadcastMessage.trim() }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to send broadcast');
+      setBroadcastMessage('');
+      setShowBroadcastOverlay(true);
+      setTimeout(() => setShowBroadcastOverlay(false), 2000);
+    } catch (e) {
+      addToast({ message: e.message || 'Failed to send broadcast', type: 'error' });
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
 
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#05070F' }}>
@@ -350,8 +377,39 @@ function DashboardContent() {
             )}
           </div>
 
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.09)' }}
+          >
+            <h3 className="font-semibold text-white text-base mb-3">📢 Broadcast Message</h3>
+            <textarea
+              maxLength={280}
+              value={broadcastMessage}
+              onChange={(e) => setBroadcastMessage(e.target.value)}
+              className="w-full min-h-28 rounded-xl p-3 bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/40 outline-none focus:border-white/25"
+              placeholder="Type a message for all staff..."
+            />
+            <p className="text-xs text-muted mt-2">{broadcastMessage.length}/280</p>
+            <button
+              onClick={sendBroadcast}
+              disabled={!broadcastMessage.trim() || sendingBroadcast}
+              className="mt-3 px-4 py-2 rounded-xl font-semibold text-sm text-white bg-red-500/85 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sendingBroadcast ? 'Sending...' : 'Send to All Staff'}
+            </button>
+          </div>
+
         </div>
       </main>
+
+      {showBroadcastOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="text-center">
+            <div className="text-[48px]">📢</div>
+            <p className="text-white font-bold text-[24px] mt-2">BROADCAST SENT TO ALL STAFF</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
