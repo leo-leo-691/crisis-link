@@ -1,14 +1,28 @@
 const { createServer } = require('http');
+const net = require('net');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 const { setIO } = require('./lib/socket');
 
 const dev  = process.env.NODE_ENV !== 'production';
-const port = parseInt(process.env.PORT || '8080', 10);
 const hostname = process.env.HOSTNAME || '0.0.0.0';
-const app  = next({ dev, hostname, port });
+const startPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const app  = next({ dev, hostname, port: startPort });
 const handle = app.getRequestHandler();
+
+function findFreePort(startAtPort) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.listen(startAtPort, () => {
+      const freePort = server.address().port;
+      server.close(() => resolve(freePort));
+    });
+    server.on('error', () => {
+      resolve(findFreePort(startAtPort + 1));
+    });
+  });
+}
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
@@ -51,7 +65,6 @@ app.prepare().then(() => {
   // Initialize DB (triggers schema creation + seed)
   try {
     require('./lib/db');
-    console.log('✅ Database ready');
   } catch (err) {
     console.error('❌ Database init failed:', err.message);
   }
@@ -65,8 +78,11 @@ app.prepare().then(() => {
     process.exit(1);
   });
 
-  httpServer.listen(port, hostname, () => {
-    console.log(`✅ CrisisLink ready — http://${hostname}:${port}`);
-    console.log(`   Demo login: admin@grandhotel.com / demo1234`);
+  findFreePort(startPort).then((PORT) => {
+    httpServer.listen(PORT, () => {
+      console.log(`✅ CrisisLink running on http://localhost:${PORT}`);
+      console.log('✅ Database ready');
+      console.log('   Demo login: admin@grandhotel.com / demo1234');
+    });
   });
 });
