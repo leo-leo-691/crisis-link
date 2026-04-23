@@ -12,66 +12,78 @@ export async function GET(request) {
     
     if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
 
-    const [totalRes, activeRes, resolvedRes, avgResolutionRes, byTypeRes, byZoneRes, dailyRes] = await Promise.all([
-      db.query("SELECT COUNT(*) as c FROM incidents WHERE is_drill = false"),
-      db.query("SELECT COUNT(*) as c FROM incidents WHERE status <> 'resolved' AND is_drill = false"),
-      db.query("SELECT COUNT(*) as c FROM incidents WHERE status = 'resolved' AND is_drill = false"),
-      db.query(`
-        SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/60) as avg_min
-        FROM incidents
-        WHERE resolved_at IS NOT NULL AND created_at IS NOT NULL AND is_drill = false
-      `),
-      db.query(`
-        SELECT type, COUNT(*)::int as count
-        FROM incidents
-        WHERE is_drill = false
-        GROUP BY type
-        ORDER BY count DESC
-      `),
-      db.query(`
-        SELECT zone, COUNT(*)::int as count
-        FROM incidents
-        WHERE is_drill = false
-        GROUP BY zone
-        ORDER BY count DESC
-        LIMIT 6
-      `),
-      db.query(`
-        WITH days AS (
-          SELECT generate_series(
-            CURRENT_DATE - INTERVAL '29 days',
-            CURRENT_DATE,
-            INTERVAL '1 day'
-          )::date AS day
-        ),
-        counts AS (
-          SELECT created_at::date AS day, COUNT(*)::int AS count
-          FROM incidents
-          WHERE is_drill = false
-            AND created_at >= CURRENT_DATE - INTERVAL '29 days'
-          GROUP BY created_at::date
-        )
-        SELECT days.day, COALESCE(counts.count, 0)::int AS count
-        FROM days
-        LEFT JOIN counts ON counts.day = days.day
-        ORDER BY days.day ASC
-      `),
-    ]);
+    const since = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString();
 
-    const dailyCounts = dailyRes.rows.map((row) => ({
-      day: new Date(row.day).toISOString().slice(0, 10),
-      count: Number(row.count) || 0,
-    }));
+    const { data: incidents, error } = await supabase
+      .from('incidents')
+      .select('type, zone, status, created_at, resolved_at, is_drill')
+      .eq('is_drill', false)
+      .gte('created_at', since);
+
+    if (error) throw error;
+
+    const all = incidents || [];
+    let totalIncidents = 0;
+    let activeIncidents = 0;
+    let resolvedIncidents = 0;
+    let resolutionSumMin = 0;
+    let resolutionCount = 0;
+
+    const byTypeMap = new Map();
+    const byZoneMap = new Map();
+    const dailyMap = new Map(); // YYYY-MM-DD -> count
+
+    for (const inc of all) {
+      totalIncidents += 1;
+      if (inc.status === 'resolved') resolvedIncidents += 1;
+      else activeIncidents += 1;
+
+      const type = inc.type || 'other';
+      byTypeMap.set(type, (byTypeMap.get(type) || 0) + 1);
+
+      const zone = inc.zone || 'Unknown';
+      byZoneMap.set(zone, (byZoneMap.get(zone) || 0) + 1);
+
+      const day = (inc.created_at ? new Date(inc.created_at) : new Date()).toISOString().slice(0, 10);
+      dailyMap.set(day, (dailyMap.get(day) || 0) + 1);
+
+      if (inc.resolved_at && inc.created_at) {
+        const createdAt = new Date(inc.created_at).getTime();
+        const resolvedAt = new Date(inc.resolved_at).getTime();
+        const diffMin = (resolvedAt - createdAt) / 60000;
+        if (Number.isFinite(diffMin) && diffMin >= 0) {
+          resolutionSumMin += diffMin;
+          resolutionCount += 1;
+        }
+      }
+    }
+
+    const avgResolutionMinutes = Math.round(resolutionCount ? (resolutionSumMin / resolutionCount) : 0);
+
+    const byType = [...byTypeMap.entries()]
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const byZone = [...byZoneMap.entries()]
+      .map(([zone, count]) => ({ zone, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const dailyCounts = [];
+    for (let i = 29; i >= 0; i -= 1) {
+      const day = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      dailyCounts.push({ day, count: dailyMap.get(day) || 0 });
+    }
 
     return NextResponse.json({
-      totalIncidents: parseInt(totalRes.rows[0].c, 10),
-      activeIncidents: parseInt(activeRes.rows[0].c, 10),
-      resolvedIncidents: parseInt(resolvedRes.rows[0].c, 10),
-      avgResolutionMinutes: Math.round(Number(avgResolutionRes.rows[0].avg_min) || 0),
-      byType: byTypeRes.rows.map((row) => ({ type: row.type || 'other', count: Number(row.count) || 0 })),
-      byZone: byZoneRes.rows.map((row) => ({ zone: row.zone || 'Unknown', count: Number(row.count) || 0 })),
+      totalIncidents,
+      activeIncidents,
+      resolvedIncidents,
+      avgResolutionMinutes,
+      byType,
+      byZone,
       dailyCounts,
     });
   } catch (err) {

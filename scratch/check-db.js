@@ -1,7 +1,8 @@
-const { query } = require('./lib/db');
+const supabase = require('../lib/supabase');
 async function check() {
-  const res = await query('SELECT email FROM users');
-  console.log(res.rows);
+  const { data, error } = await supabase.from('users').select('email');
+  if (error) throw error;
+  console.log(data);
   process.exit();
 }
 check();

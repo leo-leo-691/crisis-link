@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const db = require('@/lib/db');
 const { MOCK_SCENARIOS } = require('@/lib/mockAI');
 const { logAudit } = require('@/lib/auditLogger');
 
@@ -9,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
+    const supabase = require('@/lib/supabase');
     const { getUserFromRequest } = require('@/lib/auth');
     const user = getUserFromRequest(request);
     
@@ -25,19 +25,33 @@ export async function POST(request) {
     const triageData = MOCK_SCENARIOS.fire;
 
     // Database Insert
-    await db.query(
-      'INSERT INTO incidents (id, type, description, severity, zone, reporter_name, reporter_type, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-      [id, 'Fire', description, triageData.severity, 'Kitchen Zone', 'SimRunner', 'staff', 'reported']
-    );
+    const { error: incError } = await supabase.from('incidents').insert({
+      id,
+      type: 'Fire',
+      description,
+      severity: triageData.severity,
+      zone: 'Kitchen Zone',
+      reporter_name: 'SimRunner',
+      reporter_type: 'staff',
+      status: 'reported',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    if (incError) throw incError;
 
     if (triageData.actions) {
-      for (const action of triageData.actions) {
-        await db.query('INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3)', [id, action, 'high']);
-      }
+      const { error: taskError } = await supabase.from('incident_tasks').insert(
+        triageData.actions.map((action) => ({ incident_id: id, title: action, priority: 'high' }))
+      );
+      if (taskError) throw taskError;
     }
 
-    const incResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const incident = incResult.rows[0];
+    const { data: incident, error: fetchError } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
     logAudit('CREATE_SIMULATION', 'incident', id);
 
     // Simulated flow over websockets
@@ -49,18 +63,16 @@ export async function POST(request) {
       // Delay Assignment update
       setTimeout(async () => {
         try {
-          await db.query("UPDATE incidents SET status = 'acknowledged', updated_at = NOW() WHERE id = $1", [id]);
-          const upRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-          const updated = upRes.rows[0];
+          await supabase.from('incidents').update({ status: 'acknowledged', updated_at: new Date().toISOString() }).eq('id', id);
+          const { data: updated } = await supabase.from('incidents').select('*').eq('id', id).maybeSingle();
           io.emit('incident:updated', updated);
           logAudit('SCENARIO_RUNNER', 'incident', id, { status: "acknowledged" });
           
           // Delay resolved update
           setTimeout(async () => {
              try {
-                await db.query("UPDATE incidents SET status = 'resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = $1", [id]);
-                const finRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-                const final = finRes.rows[0];
+                await supabase.from('incidents').update({ status: 'resolved', resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id);
+                const { data: final } = await supabase.from('incidents').select('*').eq('id', id).maybeSingle();
                 io.emit('incident:updated', final);
                 io.emit('broadcast', { message: 'Demo scenario resolved successfully.', target_role: 'all', timestamp: new Date().toISOString() });
                 logAudit('SCENARIO_RUNNER', 'incident', id, { status: "resolved" });

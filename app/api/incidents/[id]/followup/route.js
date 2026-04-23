@@ -3,7 +3,7 @@ const { NextResponse } = require('next/server');
 // POST /api/incidents/[id]/followup — generate AI guest follow-up message
 export async function POST(request, { params }) {
   try {
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { generateGuestFollowup } = require('@/lib/aiTriage');
     const { getUserFromRequest } = require('@/lib/auth');
 
@@ -11,15 +11,23 @@ export async function POST(request, { params }) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = params;
-    const res = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const incident = res.rows[0];
+    const { data: incident, error: incError } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (incError) throw incError;
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const message = await generateGuestFollowup(incident);
 
-    await db.query('INSERT INTO incident_timeline (incident_id, actor, action) VALUES ($1, $2, $3)', [
-      id, user.name, 'Guest follow-up message generated'
-    ]);
+    const { error: timeError } = await supabase.from('incident_timeline').insert({
+      incident_id: id,
+      actor: user.name,
+      action: 'Guest follow-up message generated',
+      created_at: new Date().toISOString(),
+    });
+    if (timeError) throw timeError;
 
     return NextResponse.json({ message, incident_id: id });
   } catch (err) {

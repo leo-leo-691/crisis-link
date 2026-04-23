@@ -8,42 +8,41 @@ export async function PATCH(request, { params }) {
     if (authUser.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { id } = params;
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const payload = await request.json();
 
-    const updates = [];
-    const values = [];
-    let index = 1;
-
     const allowed = ['name', 'email', 'role', 'zone_assignment', 'is_active'];
+    const updates = {};
     for (const key of allowed) {
       if (payload[key] !== undefined) {
-        updates.push(`${key} = $${index++}`);
-        values.push(key === 'email' ? String(payload[key]).toLowerCase().trim() : payload[key]);
+        updates[key] = key === 'email'
+          ? String(payload[key]).toLowerCase().trim()
+          : payload[key];
       }
     }
 
     if (payload.password) {
       const bcrypt = require('bcrypt');
       const hash = await bcrypt.hash(payload.password, 10);
-      updates.push(`password_hash = $${index++}`);
-      values.push(hash);
+      updates.password_hash = hash;
     }
 
-    if (!updates.length) {
+    if (!Object.keys(updates).length) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(id);
+    updates.updated_at = new Date().toISOString();
 
-    const result = await db.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${index} RETURNING id, email, name, role, zone_assignment, is_active, created_at`,
-      values
-    );
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', Number(id))
+      .select('id, email, name, role, zone_assignment, is_active, created_at')
+      .maybeSingle();
 
-    if (!result.rows[0]) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    return NextResponse.json({ user: result.rows[0] });
+    if (error) throw error;
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return NextResponse.json({ user });
   } catch (err) {
     if (err.code === '23505') return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
     return NextResponse.json({ error: err.message }, { status: 500 });

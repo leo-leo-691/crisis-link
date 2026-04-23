@@ -12,19 +12,21 @@ const DEBRIEF_SYSTEM_PROMPT = 'You are a hospitality safety analyst. Return ONLY
 
 async function generateAndStoreDebrief(incidentId, incidentSnapshot) {
   try {
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const { getIO } = require('@/lib/socket');
 
     if (!process.env.GEMINI_API_KEY) return;
 
-    const [timelineRes, tasksRes] = await Promise.all([
-      db.query('SELECT id FROM incident_timeline WHERE incident_id = $1', [incidentId]),
-      db.query('SELECT is_complete FROM incident_tasks WHERE incident_id = $1', [incidentId]),
+    const [{ data: timeline, error: timeError }, { data: tasks, error: tasksError }] = await Promise.all([
+      supabase.from('incident_timeline').select('id').eq('incident_id', incidentId),
+      supabase.from('incident_tasks').select('is_complete').eq('incident_id', incidentId),
     ]);
+    if (timeError) throw timeError;
+    if (tasksError) throw tasksError;
 
-    const timelineCount = timelineRes.rows.length;
-    const tasksCompletedCount = tasksRes.rows.filter((task) => task.is_complete).length;
+    const timelineCount = (timeline || []).length;
+    const tasksCompletedCount = (tasks || []).filter((task) => task.is_complete).length;
     const resolutionTimeMinutes = Math.max(
       1,
       Math.round((Date.now() - new Date(incidentSnapshot.created_at).getTime()) / 60000)
@@ -45,11 +47,13 @@ Tasks completed count: ${tasksCompletedCount}`;
     const raw = result.response.text().replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(raw);
 
-    const updateRes = await db.query(
-      'UPDATE incidents SET debrief_report = $1, updated_at = $2 WHERE id = $3 RETURNING *',
-      [JSON.stringify(parsed), new Date().toISOString(), incidentId]
-    );
-    const updatedWithDebrief = updateRes.rows[0];
+    const { data: updatedWithDebrief, error: updateError } = await supabase
+      .from('incidents')
+      .update({ debrief_report: JSON.stringify(parsed), updated_at: new Date().toISOString() })
+      .eq('id', incidentId)
+      .select('*')
+      .maybeSingle();
+    if (updateError) throw updateError;
     const io = getIO();
     if (io && updatedWithDebrief) io.emit('incident:updated', updatedWithDebrief);
   } catch (error) {
@@ -59,7 +63,7 @@ Tasks completed count: ${tasksCompletedCount}`;
 
 export async function PATCH(request, { params }) {
   try {
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { getIO } = require('@/lib/socket');
     const { getUserFromRequest } = require('@/lib/auth');
 
@@ -68,8 +72,12 @@ export async function PATCH(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const incResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const incident = incResult.rows[0];
+    const { data: incident, error: incError } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (incError) throw incError;
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const allowed = VALID_TRANSITIONS[incident.status] || [];
@@ -83,18 +91,28 @@ export async function PATCH(request, { params }) {
     const now = new Date().toISOString();
     const resolvedAt = status === 'resolved' ? now : incident.resolved_at;
 
-    await db.query('UPDATE incidents SET status = $1, updated_at = $2, resolved_at = $3 WHERE id = $4', [
-      status, now, resolvedAt, id
-    ]);
+    const { error: updateError } = await supabase
+      .from('incidents')
+      .update({ status, updated_at: now, resolved_at: resolvedAt })
+      .eq('id', id);
+    if (updateError) throw updateError;
 
     // Timeline entry
     const actorName = user?.name || 'System';
-    await db.query('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES ($1, $2, $3, $4)', [
-      id, actorName, `Status changed to "${status}"`, now
-    ]);
+    const { error: timeError } = await supabase.from('incident_timeline').insert({
+      incident_id: id,
+      actor: actorName,
+      action: `Status changed to "${status}"`,
+      created_at: now,
+    });
+    if (timeError) throw timeError;
 
-    const upResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const updatedIncident = upResult.rows[0];
+    const { data: updatedIncident, error: upError } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (upError) throw upError;
     const io = getIO();
     if (io) io.emit('incident:updated', updatedIncident);
 

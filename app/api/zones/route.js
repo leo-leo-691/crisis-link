@@ -2,18 +2,27 @@ const { NextResponse } = require('next/server');
 
 export async function GET() {
   try {
-    const db = require('@/lib/db');
-    const result = await db.query(`
-      SELECT z.*, 
-             (SELECT COUNT(*) 
-              FROM incidents i 
-              WHERE i.zone = z.name 
-              AND i.status NOT IN ('resolved')) as active_incidents
-      FROM venue_zones z
-      ORDER BY z.floor ASC, z.name ASC
-    `);
+    const supabase = require('@/lib/supabase');
+    const [{ data: zones, error: zonesError }, { data: active, error: activeError }] = await Promise.all([
+      supabase.from('venue_zones').select('*').order('floor', { ascending: true }).order('name', { ascending: true }),
+      supabase.from('incidents').select('zone').neq('status', 'resolved'),
+    ]);
 
-    return NextResponse.json({ zones: result.rows });
+    if (zonesError) throw zonesError;
+    if (activeError) throw activeError;
+
+    const counts = new Map();
+    for (const row of active || []) {
+      const key = row.zone || '';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+
+    const enriched = (zones || []).map((z) => ({
+      ...z,
+      active_incidents: counts.get(z.name) || 0,
+    }));
+
+    return NextResponse.json({ zones: enriched });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -25,16 +34,19 @@ export async function POST(request) {
     const user = getUserFromRequest(request);
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const body = await request.json();
     const name = (body?.name || '').trim();
     if (!name) return NextResponse.json({ error: 'Zone name is required' }, { status: 400 });
 
-    const result = await db.query(
-      'INSERT INTO venue_zones (name, floor) VALUES ($1, $2) RETURNING *',
-      [name, 1]
-    );
-    return NextResponse.json({ zone: result.rows[0] }, { status: 201 });
+    const { data: zone, error } = await supabase
+      .from('venue_zones')
+      .insert({ name, floor: 1 })
+      .select('*')
+      .single();
+    if (error) throw error;
+
+    return NextResponse.json({ zone }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -46,12 +58,13 @@ export async function DELETE(request) {
     const user = getUserFromRequest(request);
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { searchParams } = new URL(request.url);
     const zoneId = Number(searchParams.get('id'));
     if (!zoneId) return NextResponse.json({ error: 'Zone id is required' }, { status: 400 });
 
-    await db.query('DELETE FROM venue_zones WHERE id = $1', [zoneId]);
+    const { error } = await supabase.from('venue_zones').delete().eq('id', zoneId);
+    if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

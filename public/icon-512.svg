@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="110" fill="#E63946"/>
+  <path d="M256 86L120 150V256c0 98 58 156 136 190 78-34 136-92 136-190V150L256 86Z" fill="rgba(255,255,255,0.14)" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M212 276l28 28 62-86" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700" fill="#FFFFFF" opacity="0.9">CrisisLink</text>
+</svg>
+

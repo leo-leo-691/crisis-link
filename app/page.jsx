@@ -93,17 +93,9 @@ function HomeContent() {
         await wait(1000);
       }
 
-      const res = await fetch('/api/incidents', {
+      const res = await fetch('/api/demo/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'medical',
-          zone: 'Restaurant',
-          reporter_name: 'Demo Guest',
-          description: 'Guest collapsed near table 12, unconscious',
-          reporter_type: 'guest',
-          is_drill: 1,
-        }),
       });
       const payload = await res.json();
       const incidentId = payload?.incident?.id;

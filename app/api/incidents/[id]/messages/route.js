@@ -6,10 +6,15 @@ export async function GET(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { id } = params;
-    const result = await db.query('SELECT * FROM incident_messages WHERE incident_id = $1 ORDER BY created_at ASC', [id]);
-    return NextResponse.json({ messages: result.rows });
+    const { data: messages, error } = await supabase
+      .from('incident_messages')
+      .select('*')
+      .eq('incident_id', id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return NextResponse.json({ messages: messages || [] });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -17,7 +22,7 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { getIO } = require('@/lib/socket');
     const { getUserFromRequest } = require('@/lib/auth');
 
@@ -30,19 +35,33 @@ export async function POST(request, { params }) {
     const senderName = user?.name || sender_name || 'Anonymous';
     
     // Insert message with RETURNING to get full object
-    const result = await db.query(
-      'INSERT INTO incident_messages (incident_id, user_id, sender_name, message) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, user?.id || null, senderName, message]
-    );
-    const msg = result.rows[0];
+    const { data: msg, error: msgError } = await supabase
+      .from('incident_messages')
+      .insert({
+        incident_id: id,
+        user_id: user?.id || null,
+        sender_name: senderName,
+        message,
+      })
+      .select('*')
+      .single();
+    if (msgError) throw msgError;
 
     // Add timeline entry
-    await db.query('INSERT INTO incident_timeline (incident_id, actor, action) VALUES ($1, $2, $3)', [
-      id, senderName, `Message: "${message.slice(0, 60)}"`
-    ]);
+    const { error: timeError } = await supabase.from('incident_timeline').insert({
+      incident_id: id,
+      actor: senderName,
+      action: `Message: "${message.slice(0, 60)}"`,
+      created_at: new Date().toISOString(),
+    });
+    if (timeError) throw timeError;
 
-    const updatedIncidentRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const updatedIncident = updatedIncidentRes.rows[0];
+    const { data: updatedIncident, error: incError } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (incError) throw incError;
 
     const io = getIO();
     if (io) {

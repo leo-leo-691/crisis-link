@@ -3,13 +3,18 @@ const { NextResponse } = require('next/server');
 export async function GET(request) {
   try {
     const { getUserFromRequest } = require('@/lib/auth');
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
 
     const decoded = getUserFromRequest(request);
     if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const result = await db.query('SELECT id, email, name, role, zone_assignment FROM users WHERE id = $1 AND is_active = TRUE', [decoded.id]);
-    const user = result.rows[0];
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, name, role, zone_assignment')
+      .eq('id', decoded.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     return NextResponse.json({ user });

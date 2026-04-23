@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { analyzeIncident } from '@/lib/aiTriage';
 import { getIO } from '@/lib/socket';
-import { SOP_TASKS, query } from '@/lib/db';
+import supabase from '@/lib/supabase';
+import { SOP_TASKS } from '@/lib/sopTasks';
 import { getUserFromRequest } from '@/lib/auth';
 
 // Simple Rate Limiting (Server-side in-memory Map)
@@ -36,32 +37,28 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
 
-    let sql = 'SELECT * FROM incidents WHERE 1=1';
-    const params = [];
-    let pIdx = 1;
-
     const status   = searchParams.get('status');
     const severity = searchParams.get('severity');
     const zone     = searchParams.get('zone');
     const type     = searchParams.get('type');
     const limit    = parseInt(searchParams.get('limit') || '100');
 
-    if (status)   { sql += ` AND status = $${pIdx++}`;   params.push(status); }
-    if (severity) { sql += ` AND severity = $${pIdx++}`; params.push(severity); }
-    if (zone)     { sql += ` AND zone = $${pIdx++}`;     params.push(zone); }
-    if (type)     { sql += ` AND type = $${pIdx++}`;     params.push(type); }
-    
-    sql += ` ORDER BY created_at DESC LIMIT $${pIdx++}`;
-    params.push(limit);
+    let q = supabase.from('incidents').select('*').order('created_at', { ascending: false }).limit(limit);
+    if (status) q = q.eq('status', status);
+    if (severity) q = q.eq('severity', severity);
+    if (zone) q = q.eq('zone', zone);
+    if (type) q = q.eq('type', type);
 
-    const [result, countResult] = await Promise.all([
-      query(sql, params),
-      query("SELECT COUNT(*) as c FROM incidents WHERE status NOT IN ('resolved')")
+    const [{ data: incidents, error: listError }, { count, error: countError }] = await Promise.all([
+      q,
+      supabase.from('incidents').select('id', { count: 'exact', head: true }).neq('status', 'resolved'),
     ]);
+    if (listError) throw listError;
+    if (countError) throw countError;
 
-    return NextResponse.json({ 
-      incidents: result.rows, 
-      totalActive: parseInt(countResult.rows[0].c || '0') 
+    return NextResponse.json({
+      incidents: incidents || [],
+      totalActive: count || 0,
     });
   } catch (err) {
     console.error('[GET /api/incidents] Critical Failure:', err);
@@ -72,7 +69,6 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const ip = request.headers.get('x-forwarded-for') || 'anonymous';
     if (isRateLimited(ip)) {
@@ -85,6 +81,11 @@ export async function POST(request) {
       room_number, is_drill = false,
     } = body;
 
+    const isGuestUnauthed = !user && (reporter_type === 'guest' || reporter_type === 'anonymous' || !reporter_type);
+    if (!user && !isGuestUnauthed) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     if (!type || !zone) {
       return NextResponse.json({ error: 'Incident type and zone are mandatory' }, { status: 400 });
     }
@@ -94,61 +95,88 @@ export async function POST(request) {
     const now = new Date().toISOString();
 
     const severity = type === 'fire' || type === 'medical' ? 'high' : 'medium';
+    const normalizedReporterType = user ? (reporter_type || 'staff') : 'guest';
+    const normalizedIsDrill = user ? is_drill : false;
 
     // Persist Incident Data immediately (Idempotent)
-    try {
-      await query(`
-        INSERT INTO incidents 
-        (id, type, severity, status, zone, room_number, reporter_name, reporter_type, description,
-         description_translated, detected_language, ai_triage, ai_provider, evacuation_route,
-         recommended_responder, is_drill, created_at, updated_at)
-        VALUES ($1, $2, $3, 'reported', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-      `, [
-        id, type, severity, zone, room_number || null, reporter_name || 'Anonymous',
-        reporter_type, descText, descText, 'en',
-        null, 'pending', null, null, is_drill,
-        now, now,
-      ]);
-    } catch (err) {
-      if (err.code === '23505') { // Postgres duplicate key violation
-        const dup = await query('SELECT * FROM incidents WHERE id = $1', [id]);
-        return NextResponse.json({ success: true, incident: dup.rows[0], duplicate: true }, { status: 200 });
+    const { data: inserted, error: insertError } = await supabase
+      .from('incidents')
+      .insert({
+        id,
+        type,
+        severity,
+        status: 'reported',
+        zone,
+        room_number: room_number || null,
+        reporter_name: reporter_name || (user?.name || user?.email) || 'Anonymous',
+        reporter_type: normalizedReporterType,
+        description: descText,
+        description_translated: descText,
+        detected_language: 'en',
+        ai_triage: null,
+        ai_provider: 'pending',
+        evacuation_route: null,
+        recommended_responder: null,
+        is_drill: normalizedIsDrill,
+        created_at: now,
+        updated_at: now,
+      })
+      .select('*')
+      .maybeSingle();
+    if (insertError) {
+      if (insertError.code === '23505') {
+        const { data: dup, error: dupError } = await supabase.from('incidents').select('*').eq('id', id).maybeSingle();
+        if (dupError) throw dupError;
+        return NextResponse.json({ success: true, incident: dup, duplicate: true }, { status: 200 });
       }
-      throw err;
+      throw insertError;
     }
 
     // Initialize SOP Tasks
     const tasks = SOP_TASKS[type] || SOP_TASKS.other;
     if (tasks && tasks.length > 0) {
-      await Promise.all(tasks.map(t => 
-        query('INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3)', [id, t, 'high'])
-      ));
-      await query('UPDATE incidents SET sop_seeded = TRUE WHERE id = $1', [id]);
+      const { error: tasksError } = await supabase
+        .from('incident_tasks')
+        .insert(tasks.map((t) => ({ incident_id: id, title: t, priority: 'high' })));
+      if (tasksError) throw tasksError;
+
+      const { error: sopError } = await supabase.from('incidents').update({ sop_seeded: true }).eq('id', id);
+      if (sopError) throw sopError;
     }
 
     // Log to Timeline
-    await query('INSERT INTO incident_timeline (incident_id, actor, action, created_at) VALUES ($1, $2, $3, $4)', [
-      id, reporter_name || 'System', `Emergency broadcast initialized: ${type.toUpperCase()} in ${zone}`, now
-    ]);
+    const { error: timeError } = await supabase.from('incident_timeline').insert({
+      incident_id: id,
+      actor: reporter_name || 'System',
+      action: `Emergency broadcast initialized: ${type.toUpperCase()} in ${zone}`,
+      created_at: now,
+    });
+    if (timeError) throw timeError;
 
     // Fetch active incidents (also needed for live_count)
-    const activeIncsResult = await query("SELECT * FROM incidents WHERE status NOT IN ('resolved')");
-    const activeIncs = activeIncsResult.rows;
+    const { count: activeCount, error: activeCountError } = await supabase
+      .from('incidents')
+      .select('id', { count: 'exact', head: true })
+      .neq('status', 'resolved');
+    if (activeCountError) throw activeCountError;
 
     // Realtime Broadcast
-    const incidentResult = await query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const newIncident = incidentResult.rows[0];
+    const newIncident = inserted;
     const io = getIO();
     if (io) {
       io.emit('incident:new', newIncident);
-      io.emit('live_count', { count: activeIncs.length });
+      io.emit('live_count', { count: activeCount || 0 });
     }
 
     // AI Execution Pipeline (Background)
     (async () => {
       try {
-        const staffResult = await query("SELECT * FROM users WHERE role = 'staff' AND is_active = TRUE");
-        const staff = staffResult.rows;
+        const { data: staff, error: staffError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('role', 'staff')
+          .eq('is_active', true);
+        if (staffError) throw staffError;
 
         const triageResult = await analyzeIncident(type, zone, descText);
 
@@ -156,24 +184,28 @@ export async function POST(request) {
         const provider = triageResult?.provider || 'failure-fallback';
         const translated = descText;
         const detected_language = 'en';
-        const dispatchRec = staff.find(s => s.zone_assignment && zone.toLowerCase().includes((s.zone_assignment || '').toLowerCase()))?.name
-          || staff[0]?.name
+        const dispatchRec = (staff || []).find(s => s.zone_assignment && zone.toLowerCase().includes((s.zone_assignment || '').toLowerCase()))?.name
+          || staff?.[0]?.name
           || null;
 
         const aiSeverity = triage?.severity || severity;
         const evacRoute = triage?.evacuation_route || null;
 
-        await query(`
-          UPDATE incidents 
-          SET severity = $1, description_translated = $2, detected_language = $3, 
-              ai_triage = $4, ai_provider = $5, evacuation_route = $6, recommended_responder = $7,
-              updated_at = $8
-          WHERE id = $9
-        `, [aiSeverity, translated, detected_language, triage ? JSON.stringify(triage) : null, provider, evacRoute, dispatchRec, new Date().toISOString(), id]);
+        const { error: updateError } = await supabase.from('incidents').update({
+          severity: aiSeverity,
+          description_translated: translated,
+          detected_language,
+          ai_triage: triage,
+          ai_provider: provider,
+          evacuation_route: evacRoute,
+          recommended_responder: dispatchRec,
+          updated_at: new Date().toISOString(),
+        }).eq('id', id);
+        if (updateError) throw updateError;
 
         if (io) {
-          const updatedInc = await query('SELECT * FROM incidents WHERE id = $1', [id]);
-          io.emit('incident:updated', updatedInc.rows[0]);
+          const { data: updatedInc } = await supabase.from('incidents').select('*').eq('id', id).maybeSingle();
+          io.emit('incident:updated', updatedInc);
         }
       } catch (bgErr) {
         console.error('[AI Background] Error:', bgErr);
@@ -182,7 +214,7 @@ export async function POST(request) {
 
     return NextResponse.json({ 
       success: true,
-      incident: newIncident
+      incident: newIncident,
     }, { status: 201 });
 
   } catch (err) {

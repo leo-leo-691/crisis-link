@@ -4,6 +4,7 @@ const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 const { setIO } = require('./lib/socket');
+require('dotenv').config();
 
 const dev  = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
@@ -62,11 +63,8 @@ app.prepare().then(() => {
     });
   });
 
-  // Initialize DB (triggers schema creation + seed)
-  try {
-    require('./lib/db');
-  } catch (err) {
-    console.error('❌ Database init failed:', err.message);
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️ Supabase credentials not found. Check .env file.');
   }
 
   // Start background escalation service

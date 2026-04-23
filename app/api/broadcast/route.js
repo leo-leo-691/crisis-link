@@ -8,11 +8,14 @@ export async function POST(request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const { message, target_role = 'all' } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
-    await db.query('INSERT INTO broadcast_messages (sender_id, message, target_role) VALUES ($1, $2, $3)', [user.id, message, target_role]);
+    const { error } = await supabase
+      .from('broadcast_messages')
+      .insert({ sender_id: user.id, message, target_role });
+    if (error) throw error;
 
     const io = getIO();
     if (io) {

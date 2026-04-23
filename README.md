@@ -102,7 +102,7 @@ CrisisLink is an AI-first emergency command and control platform that bridges th
 │                     DATA TIER                           │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │          PostgreSQL + Supabase Integration       │   │
+│  │                 Supabase (Postgres)             │   │
 │  │  users · incidents · incident_tasks ·            │   │
 │  │  incident_messages · incident_timeline ·         │   │
 │  │  venue_zones · broadcast_messages                │   │
@@ -121,7 +121,7 @@ CrisisLink is an AI-first emergency command and control platform that bridges th
 | Animations | Framer Motion | Smooth transitions and micro-interactions |
 | State | Zustand | Lightweight client-side state management |
 | Real-Time | Socket.IO | WebSocket event bus for live updates |
-| Database | PostgreSQL (`pg`) + Supabase SDK | Persistent cloud database and admin timeline integration |
+| Database | Supabase (Postgres + `@supabase/supabase-js`) | Persistent cloud database |
 | AI Engine | Google Gemini 2.0 Flash | Triage, SOP generation, and incident intelligence |
 | Auth | JWT + bcrypt | Secure role-based authentication |
 | Charts | Recharts | Analytics visualizations |
@@ -137,9 +137,8 @@ CrisisLink is an AI-first emergency command and control platform that bridges th
 
 ### Prerequisites
 - Node.js 18 or higher
-- A PostgreSQL database connection string (`DATABASE_URL`)
 - A Google Gemini API key (free at [aistudio.google.com](https://aistudio.google.com))
-- (Optional) Supabase project keys for enhanced integrations
+- A Supabase project (URL + keys)
 
 ### Local Setup
 
@@ -167,13 +166,11 @@ GEMINI_API_KEY=your_gemini_api_key
 JWT_SECRET=any_random_string_minimum_32_characters
 NODE_ENV=development
 PORT=3000
-DATABASE_URL=your_postgresql_connection_string
 ```
 
 4. Set up database
-- Provision a PostgreSQL database (Supabase Postgres works well)
-- Add `DATABASE_URL` in `.env`
-- Tables and seed data are initialized automatically on first server start via `lib/db.js`
+- Provision a Supabase project
+- Ensure required tables exist in Supabase (users, incidents, incident_tasks, incident_messages, incident_timeline, venue_zones, broadcast_messages)
 
 5. Start the development server
 ```bash
@@ -290,7 +287,6 @@ CrisisLink directly contributes to **UN Sustainable Development Goal 11 — Sust
 ```bash
 docker build -t crisislink .
 docker run -p 3000:3000 \
-  -e DATABASE_URL=your_postgresql_url \
   -e NEXT_PUBLIC_SUPABASE_URL=your_url \
   -e NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key \
   -e SUPABASE_SERVICE_ROLE_KEY=your_key \
@@ -335,7 +331,8 @@ crisislink/
 │   └── api/                      # API routes (auth, incidents, tasks, analytics, broadcast)
 ├── components/                   # Shared UI and realtime components
 ├── lib/                          # Core services
-│   ├── db.js                     # PostgreSQL schema, queries, seed data
+│   ├── supabase.js               # Supabase client
+│   ├── sopTasks.js               # SOP task templates
 │   ├── aiTriage.js               # Gemini triage service
 │   ├── auth.js                   # JWT helpers
 │   ├── escalation.js             # Auto-escalation service

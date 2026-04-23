@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import supabase from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,22 +9,25 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '3');
 
     // Only return non-sensitive fields
-    const sql = `
-      SELECT id, type, zone, created_at
-      FROM incidents
-      WHERE status NOT IN ('resolved')
-      ORDER BY created_at DESC
-      LIMIT $1
-    `;
-    
-    const [result, countResult] = await Promise.all([
-      query(sql, [limit]),
-      query("SELECT COUNT(*) as c FROM incidents WHERE status NOT IN ('resolved')")
+    const [{ data: incidents, error: incidentsError }, { count, error: countError }] = await Promise.all([
+      supabase
+        .from('incidents')
+        .select('id, type, zone, created_at')
+        .neq('status', 'resolved')
+        .order('created_at', { ascending: false })
+        .limit(limit),
+      supabase
+        .from('incidents')
+        .select('id', { count: 'exact', head: true })
+        .neq('status', 'resolved'),
     ]);
 
-    return NextResponse.json({ 
-      incidents: result.rows,
-      totalActive: parseInt(countResult.rows[0].c || '0')
+    if (incidentsError) throw incidentsError;
+    if (countError) throw countError;
+
+    return NextResponse.json({
+      incidents: incidents || [],
+      totalActive: count || 0,
     });
   } catch (err) {
     console.error('[GET /api/incidents/public] Error:', err);

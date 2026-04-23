@@ -1,17 +1,12 @@
-const { query, pool } = require('./lib/db');
+const supabase = require('../lib/supabase');
 
 async function fix() {
-  await query(`
-      CREATE TABLE IF NOT EXISTS venue_zones (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        floor INTEGER DEFAULT 1,
-        map_x REAL, map_y REAL, map_width REAL, map_height REAL
-      );
-  `);
-  
-  const count = await query('SELECT COUNT(*) FROM venue_zones');
-  if (parseInt(count.rows[0].count) === 0) {
+  const { count, error: countError } = await supabase
+    .from('venue_zones')
+    .select('id', { count: 'exact', head: true });
+  if (countError) throw countError;
+
+  if ((count || 0) === 0) {
     const zones = [
       ['Lobby', 1, 40, 380, 200, 100],
       ['Front Desk', 1, 260, 380, 120, 100],
@@ -28,9 +23,17 @@ async function fix() {
       ['Laundry', 0, 520, 340, 80, 30],
       ['Server Room', 2, 40, 100, 60, 30],
     ];
-    for (const z of zones) {
-      await query('INSERT INTO venue_zones (name, floor, map_x, map_y, map_width, map_height) VALUES ($1, $2, $3, $4, $5, $6)', z);
-    }
+    const { error } = await supabase.from('venue_zones').insert(
+      zones.map((z) => ({
+        name: z[0],
+        floor: z[1],
+        map_x: z[2],
+        map_y: z[3],
+        map_width: z[4],
+        map_height: z[5],
+      }))
+    );
+    if (error) throw error;
     console.log('seeded zones');
   }
   process.exit();

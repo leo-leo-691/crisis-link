@@ -222,16 +222,16 @@ function DashboardContent() {
           {drillMode && (
             <div
               className="rounded-2xl px-5 py-3 flex items-center gap-3"
-              style={{ background: 'rgba(168,85,247,0.10)', border: '0.5px solid rgba(168,85,247,0.30)' }}
+              style={{ background: 'rgba(249,115,22,0.12)', border: '0.5px solid rgba(249,115,22,0.35)' }}
             >
               <span style={{ fontSize: 16 }}>⚡</span>
-              <p className="mono font-bold flex-1" style={{ fontSize: 11, color: '#C084FC', letterSpacing: '0.08em' }}>
+              <p className="mono font-bold flex-1" style={{ fontSize: 11, color: '#FDBA74', letterSpacing: '0.08em' }}>
                 DRILL MODE ACTIVE — All incidents are simulated
               </p>
               <button
                 onClick={toggleDrill}
-                className="px-3 py-1.5 rounded-lg font-semibold transition-all hover:bg-purple-500/20"
-                style={{ fontSize: 11, color: '#C084FC', background: 'rgba(168,85,247,0.12)', border: '0.5px solid rgba(168,85,247,0.30)' }}
+                className="px-3 py-1.5 rounded-lg font-semibold transition-all hover:bg-orange-500/20"
+                style={{ fontSize: 11, color: '#FDBA74', background: 'rgba(249,115,22,0.14)', border: '0.5px solid rgba(249,115,22,0.35)' }}
               >
                 End Drill
               </button>

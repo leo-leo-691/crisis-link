@@ -2,7 +2,7 @@ const { NextResponse } = require('next/server');
 
 export async function POST(request) {
   try {
-    const db = require('@/lib/db');
+    const supabase = require('@/lib/supabase');
     const bcrypt = require('bcrypt');
     const { generateToken } = require('@/lib/auth');
     
@@ -11,8 +11,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const result = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = TRUE', [email.toLowerCase().trim()]);
-    const user = result.rows[0];
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.toLowerCase().trim())
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
     if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
     const valid = await bcrypt.compare(password, user.password_hash);
