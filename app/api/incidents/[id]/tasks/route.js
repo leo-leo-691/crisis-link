@@ -38,8 +38,14 @@ export async function POST(request, { params }) {
       id, 'System', `Task added: "${title}"`
     ]);
 
+    const updatedIncidentRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const updatedIncident = updatedIncidentRes.rows[0];
+
     const io = getIO();
-    if (io) io.to(`incident:${id}`).emit('incident:task', task);
+    if (io) {
+      io.to(id).emit('incident:task', { incidentId: id, task });
+      if (updatedIncident) io.emit('incident:updated', updatedIncident);
+    }
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (err) {

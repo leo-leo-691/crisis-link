@@ -94,16 +94,16 @@ export async function PATCH(request, { params }) {
     ]);
 
     const upResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const updated = upResult.rows[0];
+    const updatedIncident = upResult.rows[0];
     const io = getIO();
-    if (io) io.emit('incident:updated', updated);
+    if (io) io.emit('incident:updated', updatedIncident);
 
     if (status === 'resolved') {
       // Fire-and-forget generation to keep status update fast.
-      generateAndStoreDebrief(id, updated);
+      generateAndStoreDebrief(id, updatedIncident);
     }
 
-    return NextResponse.json({ incident: updated });
+    return NextResponse.json({ incident: updatedIncident });
   } catch (err) {
     console.error('[PATCH /api/incidents/:id/status]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

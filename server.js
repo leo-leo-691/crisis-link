@@ -49,8 +49,8 @@ app.prepare().then(() => {
 
     // Join an incident-specific room for targeted events
     socket.on('join:incident', (incidentId) => {
-      socket.join(`incident:${incidentId}`);
-      console.log(`[WS] ${socket.id} joined incident:${incidentId}`);
+      socket.join(incidentId);
+      console.log(`[WS] ${socket.id} joined ${incidentId}`);
     });
 
     socket.on('leave:incident', (incidentId) => {

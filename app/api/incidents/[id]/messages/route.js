@@ -41,8 +41,14 @@ export async function POST(request, { params }) {
       id, senderName, `Message: "${message.slice(0, 60)}"`
     ]);
 
+    const updatedIncidentRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const updatedIncident = updatedIncidentRes.rows[0];
+
     const io = getIO();
-    if (io) io.to(`incident:${id}`).emit('incident:message', { incidentId: id, message: msg });
+    if (io) {
+      io.to(id).emit('incident:message', msg);
+      if (updatedIncident) io.emit('incident:updated', updatedIncident);
+    }
 
     return NextResponse.json({ message: msg }, { status: 201 });
   } catch (err) {

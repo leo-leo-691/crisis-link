@@ -4,6 +4,7 @@ const { NextResponse } = require('next/server');
 export async function PATCH(request, { params }) {
   try {
     const db = require('@/lib/db');
+    const { getIO } = require('@/lib/socket');
     const { id, taskId } = params;
 
     // Toggle logic in SQL using RETURNING
@@ -13,7 +14,17 @@ export async function PATCH(request, { params }) {
     );
     
     if (result.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ task: result.rows[0] });
+
+    const task = result.rows[0];
+    const updatedIncidentRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const updatedIncident = updatedIncidentRes.rows[0];
+    const io = getIO();
+    if (io) {
+      io.to(id).emit('incident:task', { incidentId: id, task });
+      if (updatedIncident) io.emit('incident:updated', updatedIncident);
+    }
+
+    return NextResponse.json({ task });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

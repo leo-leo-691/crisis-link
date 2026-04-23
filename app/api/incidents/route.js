@@ -137,10 +137,10 @@ export async function POST(request) {
 
     // Realtime Broadcast
     const incidentResult = await query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const incident = incidentResult.rows[0];
+    const newIncident = incidentResult.rows[0];
     const io = getIO();
     if (io) {
-      io.emit('incident:new', incident);
+      io.emit('incident:new', newIncident);
       io.emit('live_count', { count: activeIncs.length });
     }
 
@@ -182,7 +182,7 @@ export async function POST(request) {
 
     return NextResponse.json({ 
       success: true,
-      incident 
+      incident: newIncident
     }, { status: 201 });
 
   } catch (err) {
