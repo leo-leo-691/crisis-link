@@ -13,6 +13,8 @@ export const viewport = {
 };
 
 
+import OfflineBanner from '@/components/OfflineBanner';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -24,6 +26,7 @@ export default function RootLayout({ children }) {
       </head>
 
       <body className="bg-navy text-white antialiased">
+        <OfflineBanner />
         {children}
       </body>
     </html>

@@ -27,6 +27,7 @@ export default function TopBar() {
   const user       = useAuthStore(s => s.user);
   const logout     = useAuthStore(s => s.logout);
   const connected  = useSocketStore(s => s.connected);
+  const isReconnecting = useSocketStore(s => s.isReconnecting);
   const soundOn    = useUIStore(s => s.soundEnabled);
   const toggleSound = useUIStore(s => s.toggleSound);
   const isDark     = useUIStore(s => s.isDarkMode);
@@ -40,6 +41,8 @@ export default function TopBar() {
   const connStyle =
     connected
       ? { dot: '#2DC653', shadow: '#2DC653', label: 'ONLINE', bg: 'rgba(45,198,83,0.12)', border: 'rgba(45,198,83,0.30)' }
+      : isReconnecting
+      ? { dot: '#F4A261', shadow: '#F4A261', label: 'RECONNECTING', bg: 'rgba(244,162,97,0.12)', border: 'rgba(244,162,97,0.30)', animate: true }
       : { dot: '#E63946', shadow: '#E63946', label: 'OFFLINE', bg: 'rgba(230,57,70,0.12)', border: 'rgba(230,57,70,0.30)' };
 
   return (
@@ -84,7 +87,7 @@ export default function TopBar() {
           className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full mono"
           style={{ fontSize: 10, background: connStyle.bg, border: `0.5px solid ${connStyle.border}`, letterSpacing: '0.06em', color: connStyle.dot }}
         >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: connStyle.dot, boxShadow: `0 0 4px ${connStyle.shadow}` }} />
+          <span className={`w-1.5 h-1.5 rounded-full ${connStyle.animate ? 'animate-ping-slow' : ''}`} style={{ background: connStyle.dot, boxShadow: `0 0 4px ${connStyle.shadow}` }} />
           {connStyle.label}
         </div>
 

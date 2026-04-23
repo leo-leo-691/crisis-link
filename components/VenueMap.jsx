@@ -1,13 +1,19 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
-export default function VenueMap({ zones = [], incidents = [], selectedZone, onZoneClick }) {
+export default function VenueMap({ zones = [], incidents = [], selectedZone, mode = 'live', onZoneClick }) {
   const [tooltip, setTooltip] = useState(null);
 
   const activeByZone = {};
   for (const inc of incidents) {
     if (inc.status !== 'resolved') {
       activeByZone[inc.zone] = (activeByZone[inc.zone] || 0) + 1;
+    }
+  }
+  const activeNonDrillByZone = {};
+  for (const inc of incidents) {
+    if (inc.status !== 'resolved' && !inc.is_drill) {
+      activeNonDrillByZone[inc.zone] = (activeNonDrillByZone[inc.zone] || 0) + 1;
     }
   }
 
@@ -21,10 +27,10 @@ export default function VenueMap({ zones = [], incidents = [], selectedZone, onZ
   };
 
   const sevColors = {
-    critical: { fill: 'rgba(230,57,70,0.4)',  stroke: '#E63946', glow: true, pulse: true },
-    high:     { fill: 'rgba(244,162,97,0.3)', stroke: '#F4A261', glow: false, pulse: false },
-    medium:   { fill: 'rgba(250,204,21,0.25)',stroke: '#FACC15', glow: false, pulse: false },
-    low:      { fill: 'rgba(45,198,83,0.2)',  stroke: '#2DC653', glow: false, pulse: false },
+    critical: { fill: 'rgba(230,57,70,0.25)',  stroke: '#E63946', glow: true, pulse: true },
+    high:     { fill: 'rgba(244,162,97,0.25)', stroke: '#F4A261', glow: false, pulse: false },
+    medium:   { fill: 'rgba(250,204,21,0.20)', stroke: '#FACC15', glow: false, pulse: false },
+    low:      { fill: 'rgba(69,123,157,0.20)', stroke: '#457B9D', glow: false, pulse: false },
   };
 
   const getHeatmapColor = (count, max) => {
@@ -101,7 +107,7 @@ export default function VenueMap({ zones = [], incidents = [], selectedZone, onZ
             cfg = getHeatmapColor(currentCount, maxCount);
           } else {
             const sev = getSeverityForZone(zoneName);
-            cfg = sev ? sevColors[sev] : null;
+            cfg = sev ? sevColors[sev] : { fill: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.10)' };
             currentCount = activeByZone[zoneName] || 0;
           }
 
@@ -138,12 +144,31 @@ export default function VenueMap({ zones = [], incidents = [], selectedZone, onZ
                 width={zone.map_width}
                 height={zone.map_height}
                 rx={8}
-                fill={cfg ? cfg.fill : 'rgba(255,255,255,0.02)'}
-                stroke={cfg ? cfg.stroke : 'rgba(255,255,255,0.08)'}
-                strokeWidth={cfg ? 2 : 1}
+                fill={cfg.fill}
+                stroke={cfg.stroke}
+                strokeWidth={cfg.stroke !== 'rgba(255,255,255,0.10)' ? 2 : 1}
                 filter={cfg?.glow ? 'url(#glow)' : undefined}
                 className="transition-colors duration-500"
               />
+
+              {mode !== 'heatmap' && (activeNonDrillByZone[zoneName] || 0) > 0 && (
+                <g>
+                  <circle
+                    cx={zone.map_x + (zone.map_width / 2)}
+                    cy={zone.map_y + (zone.map_height / 2)}
+                    r="8"
+                    fill={cfg.stroke}
+                  />
+                  <circle
+                    cx={zone.map_x + (zone.map_width / 2)}
+                    cy={zone.map_y + (zone.map_height / 2)}
+                    r="8"
+                    fill={cfg.stroke}
+                    className="animate-ping"
+                    opacity="0.5"
+                  />
+                </g>
+              )}
               
               <text
                 x={zone.map_x + zone.map_width / 2}

@@ -54,7 +54,7 @@ export async function POST(request) {
     const result = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
     const incident = result.rows[0];
     const io = getIO();
-    if (io) io.emit('incident:new', incident);
+    if (io) io.emit('incident:updated', incident);
 
     return NextResponse.json({ incident, provider }, { status: 201 });
   } catch (err) {

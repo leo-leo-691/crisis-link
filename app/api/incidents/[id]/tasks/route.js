@@ -23,13 +23,13 @@ export async function POST(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = params;
-    const { title, priority = 'medium' } = await request.json();
+    const { title, priority = 'medium', assigned_to = null } = await request.json();
 
     if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
     const result = await db.query(
-      'INSERT INTO incident_tasks (incident_id, title, priority) VALUES ($1, $2, $3) RETURNING *',
-      [id, title, priority]
+      'INSERT INTO incident_tasks (incident_id, title, assigned_to, priority) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, title, assigned_to, priority]
     );
     const task = result.rows[0];
 

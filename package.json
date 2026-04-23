@@ -19,6 +19,8 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.104.0",
     "autoprefixer": "^10.5.0",
     "bcrypt": "^6.0.0",
     "date-fns": "^4.1.0",

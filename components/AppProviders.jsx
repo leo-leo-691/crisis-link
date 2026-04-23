@@ -5,6 +5,7 @@ import useSocketStore from '@/lib/stores/socketStore';
 import useUIStore from '@/lib/stores/uiStore';
 import ToastContainer from './ToastContainer';
 import BroadcastBanner from './BroadcastBanner';
+import CriticalAlertBanner from './CriticalAlertBanner';
 
 export default function AppProviders({ children }) {
   const initAuth   = useAuthStore(s => s.init);
@@ -35,6 +36,7 @@ export default function AppProviders({ children }) {
       {children}
       <ToastContainer />
       <BroadcastBanner />
+      <CriticalAlertBanner />
     </>
   );
 }

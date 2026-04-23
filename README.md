@@ -20,8 +20,8 @@
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
 - **AI Engine**: [Google Gemini 2.0 Flash](https://aistudio.google.com/)
 - **Real-time**: [Socket.io](https://socket.io/)
-- **Database**: [SQLite](https://www.sqlite.org/) (via `better-sqlite3`)
-- **Styling**: Vanilla CSS + Tailwind CSS
+- **Database**: [PostgreSQL](https://www.postgresql.org/) (via `pg` & Supabase)
+- **Styling**: Tailwind CSS + Framer Motion
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Icons**: [Lucide React](https://lucide.dev/)
 
@@ -32,6 +32,7 @@
 ### Prerequisites
 - Node.js 18.x or higher
 - A Google AI Studio API Key (for Gemini)
+- A PostgreSQL database (e.g., Supabase)
 
 ### Installation
 
@@ -53,8 +54,8 @@ GEMINI_API_KEY=your_google_gemini_key_here
 NEXTAUTH_SECRET=your_random_secret_here
 jwt_secret=your_jwt_secret_here
 
-# Required for Live Deployment
-DATABASE_URL=your_supabase_postgres_url
+# Database Configuration
+DATABASE_URL=your_postgresql_connection_string
 ```
 
 4. **Run the development server**
@@ -62,6 +63,12 @@ DATABASE_URL=your_supabase_postgres_url
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) to see the platform in action.
+
+---
+
+## 🚀 Submission Documentation
+For a complete breakdown of the project architecture, social impact, and technical details for the **Google Solution Challenge**, please refer to:
+👉 **[Summary.md](./Summary.md)**
 
 ---
 
@@ -75,7 +82,7 @@ CrisisLink is designed to be highly scalable using **Supabase** for the database
 - Provide this as `DATABASE_URL` in your environment.
 
 ### 2. Google Cloud Run Deployment
-For the **Google Solution Challenge**, we recommend deploying to Cloud Run to leverage Google's global infrastructure:
+For the **Google Solution Challenge**, we recommend deploying to Cloud Run:
 1. Build the Docker image:
    ```bash
    gcloud builds submit --tag gcr.io/[PROJECT_ID]/crisislink
@@ -102,7 +109,6 @@ CrisisLink prioritizes data security:
 - **JWT Authorization**: All sensitive API routes are protected via JSON Web Tokens.
 - **Rate Limiting**: SOS submission endpoints are rate-limited to prevent automated spam.
 - **Input Sanitization**: AI Triage logic cleans and validates all incident descriptions.
-The system is designed to be easily portable to Google Cloud Run and Cloud SQL (PostgreSQL) for production-grade security.
 
 ## 🏆 Google Solution Challenge 2026
 This project was built for the **2026 Google Solution Challenge**, addressing the UN Sustainable Development Goal of **Good Health and Well-being (SDG 3)** and **Sustainable Cities and Communities (SDG 11)**.

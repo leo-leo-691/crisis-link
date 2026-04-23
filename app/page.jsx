@@ -19,11 +19,7 @@ const DEMO_ACCOUNTS = [
   { email: 'staff@grandhotel.com',  password: 'demo1234', role: 'Staff',    color: 'rgba(69,123,157,0.20)',  border: 'rgba(69,123,157,0.40)',  textColor: '#7DBFEF' },
 ];
 
-const RECENT_ACTIVITY = [
-  { icon: '🔥', color: 'rgba(230,57,70,0.25)', border: 'rgba(230,57,70,0.50)', text: 'Fire alert in Kitchen — Zone 4', time: '2m ago' },
-  { icon: '🚑', color: 'rgba(69,123,157,0.25)', border: 'rgba(69,123,157,0.50)', text: 'Medical response at Pool Area', time: '8m ago' },
-  { icon: '🔐', color: 'rgba(244,162,97,0.25)', border: 'rgba(244,162,97,0.50)', text: 'Security breach — Parking Level 2', time: '22m ago' },
-];
+// RECENT_ACTIVITY static data removed in favor of live fetch
 
 /* ── Shield SVG Logo ─────────────────────────────────── */
 function ShieldIcon({ size = 52 }) {
@@ -52,6 +48,8 @@ function HomeContent() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [recentIncidents, setRecentIncidents] = useState([]);
+  const [activeCount, setActiveCount] = useState(0);
 
   useEffect(() => {
     if (!loading && user) {
@@ -59,6 +57,38 @@ function HomeContent() {
       else router.replace('/staff/dashboard');
     }
   }, [user, loading]);
+
+  useEffect(() => {
+    const fetchPublicIncidents = async () => {
+      try {
+        const res = await fetch('/api/incidents/public');
+        const data = await res.json();
+        setRecentIncidents(data.incidents || []);
+        setActiveCount(data.totalActive || 0);
+      } catch (err) {
+        console.error('Failed to fetch public incidents:', err);
+      }
+    };
+    fetchPublicIncidents();
+    const interval = setInterval(fetchPublicIncidents, 10000); // Poll every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatIncident = (inc) => {
+    let icon = '⚠️';
+    let color = 'rgba(244,162,97,0.25)';
+    let border = 'rgba(244,162,97,0.50)';
+
+    if (inc.type === 'fire') { icon = '🔥'; color = 'rgba(230,57,70,0.25)'; border = 'rgba(230,57,70,0.50)'; }
+    else if (inc.type === 'medical') { icon = '🚑'; color = 'rgba(69,123,157,0.25)'; border = 'rgba(69,123,157,0.50)'; }
+    else if (inc.type === 'security') { icon = '🔐'; color = 'rgba(244,162,97,0.25)'; border = 'rgba(244,162,97,0.50)'; }
+    
+    const mins = Math.floor((new Date() - new Date(inc.created_at)) / 60000);
+    const time = mins < 1 ? 'just now' : `${mins}m ago`;
+    const typeStr = inc.type.charAt(0).toUpperCase() + inc.type.slice(1);
+    
+    return { id: inc.id, icon, color, border, text: `${typeStr} alert in ${inc.zone}`, time };
+  };
 
   return (
     <main
@@ -97,8 +127,8 @@ function HomeContent() {
           <div className="divider" />
           <div>
             <p className="mono text-[10px] uppercase tracking-widest mb-2" style={{ color: 'rgba(232,234,240,0.35)' }}>Active Incidents Today</p>
-            <p className="font-bold count-flip" style={{ fontSize: 48, color: 'white', lineHeight: 1 }}>3</p>
-            <p className="text-xs mt-1" style={{ color: 'rgba(232,234,240,0.4)' }}>across 14 monitored zones</p>
+            <p className="font-bold count-flip" style={{ fontSize: 48, color: 'white', lineHeight: 1 }}>{activeCount}</p>
+            <p className="text-xs mt-1" style={{ color: 'rgba(232,234,240,0.4)' }}>across monitored zones</p>
           </div>
         </div>
       </div>
@@ -162,20 +192,26 @@ function HomeContent() {
             RECENT ACTIVITY
           </p>
           <div className="space-y-3">
-            {RECENT_ACTIVITY.map((item, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                  style={{ background: item.color, border: `0.5px solid ${item.border}` }}
-                >
-                  {item.icon}
+            {recentIncidents.length === 0 && (
+              <p className="text-sm italic" style={{ color: 'rgba(232,234,240,0.50)' }}>No recent activity detected.</p>
+            )}
+            {recentIncidents.map((rawInc) => {
+              const item = formatIncident(rawInc);
+              return (
+                <div key={item.id} className="flex items-start gap-3">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
+                    style={{ background: item.color, border: `0.5px solid ${item.border}` }}
+                  >
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug" style={{ color: 'rgba(232,234,240,0.80)' }}>{item.text}</p>
+                    <p className="mono mt-0.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.35)' }}>{item.time}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm leading-snug" style={{ color: 'rgba(232,234,240,0.80)' }}>{item.text}</p>
-                  <p className="mono mt-0.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.35)' }}>{item.time}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="divider" />
           <div className="flex items-center gap-2">

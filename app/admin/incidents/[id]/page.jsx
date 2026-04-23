@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import { SeverityBadge, StatusBadge, TypeIcon } from '@/components/IncidentCard';
 import CrisisBot from '@/components/CrisisBot';
 import DebriefModal from '@/components/DebriefModal';
+import AITriagePanel from '@/components/AITriagePanel';
 import useAuthStore from '@/lib/stores/authStore';
 import useIncidentStore from '@/lib/stores/incidentStore';
 import useSocketStore from '@/lib/stores/socketStore';
@@ -37,6 +38,13 @@ function IncidentDetail() {
   const [chatSending, setChatSending] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [togglingTasks, setTogglingTasks] = useState({});
+  const [users, setUsers] = useState([]);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskPriority, setTaskPriority] = useState('medium');
+  const [taskAssignee, setTaskAssignee] = useState('');
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -54,6 +62,12 @@ function IncidentDetail() {
       joinIncident(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'tasks' && users.length === 0) {
+      fetchUsers();
+    }
+  }, [activeTab, users.length]);
 
   // Realtime updates are handled globally via socketStore.js
 
@@ -105,6 +119,59 @@ function IncidentDetail() {
     finally { setChatSending(false); }
   };
 
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to load users');
+      setUsers(payload.users || []);
+    } catch (e) {
+      addToast({ message: e.message || 'Failed to load users', type: 'error' });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const openTaskModal = async () => {
+    setShowTaskModal(true);
+    await fetchUsers();
+  };
+
+  const closeTaskModal = () => {
+    setShowTaskModal(false);
+    setTaskTitle('');
+    setTaskPriority('medium');
+    setTaskAssignee('');
+  };
+
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    if (!taskTitle.trim()) return;
+
+    try {
+      setCreatingTask(true);
+      const res = await fetch(`/api/incidents/${id}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: taskTitle.trim(),
+          assigned_to: taskAssignee ? Number(taskAssignee) : null,
+          priority: taskPriority,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || 'Failed to add task');
+      closeTaskModal();
+      await load();
+      addToast({ message: 'Task added', type: 'success' });
+    } catch (e) {
+      addToast({ message: e.message || 'Failed to add task', type: 'error' });
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
   if (!data || !data.incident) return (
     <div className="flex h-screen bg-navy">
       <Sidebar />
@@ -125,6 +192,10 @@ function IncidentDetail() {
   const { incident, tasks = [], messages = [], timeline = [] } = data;
   const triage = typeof incident.ai_triage === 'string' ? JSON.parse(incident.ai_triage || 'null') : incident.ai_triage;
   const currentStatusIdx = STATUS_ORDER.indexOf(incident.status);
+  const usersById = users.reduce((acc, person) => {
+    acc[String(person.id)] = person;
+    return acc;
+  }, {});
 
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
@@ -243,7 +314,15 @@ function IncidentDetail() {
             <div className="glass p-5 space-y-2 fade-in">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm text-white">SOP Checklist</h3>
-                <span className="text-xs text-muted">{tasks.filter(t => t.is_complete).length}/{tasks.length} complete</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted">{tasks.filter(t => t.is_complete).length}/{tasks.length} complete</span>
+                  <button
+                    onClick={openTaskModal}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-steelblue/30 border border-steelblue/30 text-white hover:bg-steelblue/45 transition-colors"
+                  >
+                    ＋ Add Task
+                  </button>
+                </div>
               </div>
               <div className="w-full bg-white/10 rounded-full h-1 mb-4">
                 <div
@@ -260,10 +339,9 @@ function IncidentDetail() {
                     disabled={togglingTasks[task.id]}
                     className="w-4 h-4 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className={`text-sm ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
-                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-                    task.priority === 'urgent' || task.priority === 'high' ? 'text-red-300 bg-red-500/10' : 'text-muted bg-white/6'
-                  }`}>{task.priority}</span>
+                  <span className={`text-sm min-w-0 ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
+                  <span className="text-xs text-white/65">{getAssigneeName(task, usersById)}</span>
+                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${priorityClass(task.priority)}`}>{task.priority || 'medium'}</span>
                 </label>
               ))}
             </div>
@@ -310,27 +388,7 @@ function IncidentDetail() {
             <div className="space-y-4 fade-in">
               {/* Triage summary */}
               {triage && (
-                <div className="glass p-5 space-y-3">
-                  <h3 className="font-semibold text-sm text-white">AI Triage Analysis <span className="text-xs text-muted">({incident.ai_provider})</span></h3>
-                  <p className="text-sm text-white/80">{triage.brief_summary}</p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <Detail label="Est. Response Time" value={`${triage.estimated_response_time_minutes} min`} />
-                    <Detail label="Confidence" value={`${triage.confidence}%`} />
-                  </div>
-                  {triage.recommended_actions?.length > 0 && (
-                    <div>
-                      <p className="text-xs text-muted mb-2">Recommended Actions:</p>
-                      <ul className="space-y-1">
-                        {triage.recommended_actions.map((a, i) => (
-                          <li key={i} className="text-xs flex items-start gap-2">
-                            <span className="text-steelblue font-bold flex-shrink-0">{i+1}.</span>
-                            <span className="text-white/80">{a}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                <AITriagePanel triage={triage} provider={incident.ai_provider} />
               )}
 
               {/* AI actions */}
@@ -399,8 +457,87 @@ function IncidentDetail() {
       </main>
 
       {debrief && <DebriefModal report={debrief} incidentId={id} onClose={() => setDebrief(null)} />}
+      {showTaskModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <form onSubmit={handleAddTask} className="w-full max-w-md rounded-xl border border-white/15 bg-navy/90 backdrop-blur-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">Add Task</h3>
+              <button type="button" onClick={closeTaskModal} className="text-muted hover:text-white transition-colors">✕</button>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="taskTitle" className="text-xs text-muted">Task title</label>
+              <input
+                id="taskTitle"
+                required
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                className="input-dark w-full text-sm"
+                placeholder="Enter task title"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="taskAssignee" className="text-xs text-muted">Assignee</label>
+              <select
+                id="taskAssignee"
+                value={taskAssignee}
+                onChange={(e) => setTaskAssignee(e.target.value)}
+                className="input-dark w-full text-sm"
+                disabled={loadingUsers}
+              >
+                <option value="">Unassigned</option>
+                {users.map((person) => (
+                  <option key={person.id} value={person.id}>{person.name} (#{person.id})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="taskPriority" className="text-xs text-muted">Priority</label>
+              <select
+                id="taskPriority"
+                value={taskPriority}
+                onChange={(e) => setTaskPriority(e.target.value)}
+                className="input-dark w-full text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={creatingTask || !taskTitle.trim()}
+              className="w-full py-2.5 bg-steelblue hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-semibold text-white transition-colors"
+            >
+              {creatingTask ? 'Adding…' : 'Add Task'}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
+}
+
+function getAssigneeName(task, usersById) {
+  const key = task.assigned_to == null ? '' : String(task.assigned_to);
+  return usersById[key]?.name || 'Unassigned';
+}
+
+function priorityClass(priority) {
+  switch ((priority || '').toLowerCase()) {
+    case 'urgent':
+      return 'text-red-300 bg-red-500/20 border border-red-500/30';
+    case 'high':
+      return 'text-orange-300 bg-orange-500/20 border border-orange-500/30';
+    case 'medium':
+      return 'text-yellow-200 bg-yellow-500/15 border border-yellow-500/25';
+    default:
+      return 'text-emerald-300 bg-emerald-500/15 border border-emerald-500/25';
+  }
 }
 
 function Detail({ label, value }) {

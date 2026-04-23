@@ -43,7 +43,7 @@ export async function POST(request) {
     // Simulated flow over websockets
     const io = (require('@/lib/socket')).getIO();
     if (io) {
-      io.emit('incident:new', incident);
+      io.emit('incident:updated', incident);
       io.emit('broadcast', { message: `DEMO STARTED: Kitchen Fire`, target_role: 'all', timestamp: new Date().toISOString() });
       
       // Delay Assignment update
@@ -52,7 +52,7 @@ export async function POST(request) {
           await db.query("UPDATE incidents SET status = 'acknowledged', updated_at = NOW() WHERE id = $1", [id]);
           const upRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
           const updated = upRes.rows[0];
-          io.emit('incident:update', updated);
+          io.emit('incident:updated', updated);
           logAudit('SCENARIO_RUNNER', 'incident', id, { status: "acknowledged" });
           
           // Delay resolved update
@@ -61,13 +61,13 @@ export async function POST(request) {
                 await db.query("UPDATE incidents SET status = 'resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = $1", [id]);
                 const finRes = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
                 const final = finRes.rows[0];
-                io.emit('incident:update', final);
+                io.emit('incident:updated', final);
                 io.emit('broadcast', { message: 'Demo scenario resolved successfully.', target_role: 'all', timestamp: new Date().toISOString() });
                 logAudit('SCENARIO_RUNNER', 'incident', id, { status: "resolved" });
              } catch (e) { console.error('Sim resolution error', e); }
-          }, 5000);
+          }, 2000);
         } catch (e) { console.error('Sim ack error', e); }
-      }, 3000);
+      }, 1500);
     }
     
     return NextResponse.json({ success: true, incident }, { status: 201 });
