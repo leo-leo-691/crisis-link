@@ -11,8 +11,7 @@ export default function AdminSettingsPage() {
 }
 
 function SettingsContent() {
-  const user    = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const logout  = useAuthStore(s => s.logout);
   const router  = useRouter();
   const drillMode    = useUIStore(s => s.drillMode);
@@ -25,8 +24,9 @@ function SettingsContent() {
   const [sending, setSending]     = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) router.replace('/');
-  }, [user, loading]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const testAI = async () => {
     setTestingAI(true);

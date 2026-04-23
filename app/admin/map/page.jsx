@@ -13,16 +13,16 @@ export default function VenueMapPage() {
 }
 
 function MapContent() {
-  const user    = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const socket = useSocketStore(s => s.socket);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/');
-  }, [user, loading]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   useEffect(() => {
     if (user) {

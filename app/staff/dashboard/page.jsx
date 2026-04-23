@@ -13,8 +13,7 @@ export default function StaffDashboard() {
 }
 
 function StaffContent() {
-  const user    = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const router  = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
@@ -23,8 +22,9 @@ function StaffContent() {
   const [ownFilter, setOwnFilter] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/');
-  }, [user, loading]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/login'); }
+  }, [user]);
 
   const load = () => fetchIncidents({});
   useEffect(() => { if (user) load(); }, [user]);

@@ -25,8 +25,7 @@ function StatPill({ label, value, color = 'bg-white/8', icon }) {
 }
 
 function AnalyticsContent() {
-  const user    = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const router  = useRouter();
   const token   = useAuthStore(s => s.token);
   const liveAnalytics = useSocketStore(s => s.liveAnalytics);
@@ -36,8 +35,9 @@ function AnalyticsContent() {
   const [range, setRange]   = useState('7d');
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/');
-  }, [user, loading]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const load = async () => {
     setFetching(true);

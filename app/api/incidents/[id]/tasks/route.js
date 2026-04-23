@@ -2,6 +2,10 @@ const { NextResponse } = require('next/server');
 
 export async function GET(request, { params }) {
   try {
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const db = require('@/lib/db');
     const { id } = params;
     const result = await db.query('SELECT * FROM incident_tasks WHERE incident_id = $1 ORDER BY id ASC', [id]);
@@ -15,6 +19,9 @@ export async function POST(request, { params }) {
   try {
     const db = require('@/lib/db');
     const { getIO } = require('@/lib/socket');
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = params;
     const { title, priority = 'medium' } = await request.json();
 

@@ -10,9 +10,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    if (user.role !== 'admin' && user.role !== 'staff') {
-      return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
-    }
+    if (user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const db = require('@/lib/db');
 

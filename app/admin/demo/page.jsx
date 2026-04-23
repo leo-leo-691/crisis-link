@@ -1,11 +1,20 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Play, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import useAuthStore from '@/lib/stores/authStore';
 
 export default function DemoTriggerPage() {
+  const { user } = useAuthStore();
+  const router = useRouter();
   const [running, setRunning] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const triggerScenario = async () => {
     setRunning(true);

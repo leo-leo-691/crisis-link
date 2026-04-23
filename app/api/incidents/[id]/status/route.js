@@ -17,6 +17,7 @@ export async function PATCH(request, { params }) {
     const { id } = params;
     const { status } = await request.json();
     const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const incResult = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
     const incident = incResult.rows[0];

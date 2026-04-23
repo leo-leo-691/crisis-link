@@ -18,8 +18,7 @@ export default function NewIncidentPage() {
 
 function NewIncidentForm() {
   const router   = useRouter();
-  const user     = useAuthStore(s => s.user);
-  const loadingAuth = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const token    = useAuthStore(s => s.token);
   const addToast = useUIStore(s => s.addToast);
   const drillMode = useUIStore(s => s.drillMode);
@@ -32,9 +31,10 @@ function NewIncidentForm() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
-    if (!loadingAuth && !user) router.replace('/');
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); return; }
     if (user) setForm(fp => ({ ...fp, reporter_name: user.name }));
-  }, [user, loadingAuth, router]);
+  }, [user]);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
@@ -68,7 +68,7 @@ function NewIncidentForm() {
     }
   };
 
-  if (loadingAuth) return null;
+  if (!user) return null;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#05070F' }}>

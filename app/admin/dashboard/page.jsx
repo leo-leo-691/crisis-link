@@ -79,8 +79,7 @@ export default function AdminDashboard() {
 }
 
 function DashboardContent() {
-  const user      = useAuthStore(s => s.user);
-  const loading   = useAuthStore(s => s.loading);
+  const { user }  = useAuthStore();
   const router    = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
@@ -93,8 +92,9 @@ function DashboardContent() {
   const [filter, setFilter]       = useState('active');
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/');
-  }, [user, loading]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const load = useCallback(async () => {
     await fetchIncidents({});
@@ -118,15 +118,27 @@ function DashboardContent() {
   const triggerDemo = async () => {
     setDemoing(true);
     try {
+      addToast({ message: `Phase 1: Intercepting SOS...`, type: 'info' });
+      await new Promise(r => setTimeout(r, 1000));
+      
+      addToast({ message: `Phase 2: AI Triage Analyzing...`, type: 'info' });
+      await new Promise(r => setTimeout(r, 1000));
+
       const res = await fetch('/api/demo/trigger', { method: 'POST' });
       const data = await res.json();
-      addToast({ message: `Demo incident created: ${data.incident?.id}`, type: 'info' });
-      load();
+      
+      addToast({ message: `Phase 3: Critical Alert Dispatched!`, type: 'success' });
+      
+      setTimeout(() => {
+        router.push(`/admin/incidents/${data.incident.id}`);
+      }, 1500);
     } catch (e) { addToast({ message: 'Demo trigger failed', type: 'error' }); }
     finally { setDemoing(false); }
   };
 
-  if (loading) return (
+  const criticalIncCount = criticalInc.length;
+
+  if (!user) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#05070F' }}>
       <div className="text-center space-y-3">
         <div className="w-10 h-10 rounded-full border-2 border-t-red-500 border-white/10 animate-spin mx-auto" />

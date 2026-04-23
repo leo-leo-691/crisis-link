@@ -2,6 +2,10 @@ const { NextResponse } = require('next/server');
 
 export async function GET(request, { params }) {
   try {
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const db = require('@/lib/db');
     const { id } = params;
     const result = await db.query('SELECT * FROM incident_messages WHERE incident_id = $1 ORDER BY created_at ASC', [id]);
@@ -19,6 +23,7 @@ export async function POST(request, { params }) {
 
     const { id } = params;
     const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { message, sender_name } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 

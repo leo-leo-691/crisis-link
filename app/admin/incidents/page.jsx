@@ -18,8 +18,7 @@ export default function IncidentsListPage() {
 }
 
 function IncidentsListContent() {
-  const user = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
+  const { user } = useAuthStore();
   const router = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const addToast = useUIStore(s => s.addToast);
@@ -30,8 +29,9 @@ function IncidentsListContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/');
-  }, [user, loading, router]);
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const load = async () => {
     setIsRefreshing(true);
@@ -63,7 +63,7 @@ function IncidentsListContent() {
     });
   }, [incidents, search, statusFilter, severityFilter]);
 
-  if (loading) return null;
+  if (!user) return null;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#05070F' }}>

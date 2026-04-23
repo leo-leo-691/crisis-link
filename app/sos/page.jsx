@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import VoiceSOSButton from '@/components/VoiceSOSButton';
+import { useOfflineQueue } from '@/lib/client/offlineQueue';
 
 const ZONES = ['Lobby', 'Restaurant', 'Kitchen', 'Pool Area', 'Gym', 'Spa', 'Bar/Lounge',
   'Conference Room A', 'Floor 1', 'Floor 2', 'Floor 3', 'Floor 4', 'Parking', 'Other'];
@@ -16,10 +17,14 @@ const TYPES = [
   { value: 'other',      icon: '⚡', label: 'Other',        color: 'rgba(168,85,247,0.20)', border: 'rgba(168,85,247,0.55)' },
 ];
 
+import { Suspense } from 'react';
+
 export default function SOSPage() {
   return (
     <AppProviders>
-      <SOSForm />
+      <Suspense fallback={<div>Loading...</div>}>
+        <SOSForm />
+      </Suspense>
     </AppProviders>
   );
 }
@@ -36,29 +41,69 @@ function SOSForm() {
   const [loading, setLoading] = useState(false);
   const [result, setResult]   = useState(null);
   const [error, setError]     = useState('');
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     const z = searchParams.get('zone');
     const r = searchParams.get('room');
     if (z) { setZone(decodeURIComponent(z)); }
     if (r) setRoom(r);
+
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => {
+        setIsOnline(true);
+        import('@/lib/client/offlineQueue').then(mod => mod.processOfflineQueue());
+      };
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      if (navigator.onLine) {
+        import('@/lib/client/offlineQueue').then(mod => mod.processOfflineQueue());
+      }
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
 
   const submit = async () => {
     setLoading(true);
     setError('');
+    const payload = { type, zone, description: desc, reporter_name: name || 'Anonymous Guest', room_number: room };
+
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE');
+      }
       const res = await fetch('/api/incidents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, zone, description: desc, reporter_name: name || 'Anonymous Guest', room_number: room }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setResult(data.incident);
-      setStep(4);
+      if (!res.ok) throw new Error(data.error || 'Failed to submit');
+      const newIncident = data.incident;
+      if (!newIncident?.id) throw new Error('Incident created but ID is missing');
+      router.push(`/sos/confirm/${newIncident.id}`);
     } catch (e) {
-      setError(e.message);
+      if (e.message === 'OFFLINE' || e.message.includes('Failed to fetch')) {
+        const { enqueue } = useOfflineQueue.getState();
+        enqueue('/api/incidents', payload, 'high');
+        setResult({
+          id: 'PENDING-SYNC',
+          zone,
+          severity: type === 'fire' || type === 'medical' ? 'high' : 'medium',
+          offline: true
+        });
+        setStep(4);
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -83,12 +128,12 @@ function SOSForm() {
     >
       {/* Emergency top banner */}
       <div className="scan-overlay flex items-center justify-center gap-3 py-3 px-4"
-        style={{ background: 'rgba(230,57,70,0.18)', borderBottom: '1px solid rgba(230,57,70,0.30)' }}>
-        <span style={{ color: '#E63946', fontSize: 14 }}>⚑</span>
-        <span className="mono font-bold" style={{ fontSize: 12, color: '#FFB3B3', letterSpacing: '0.04em' }}>
-          EMERGENCY REPORTING ACTIVE — Help is being dispatched to your location
+        style={{ background: isOnline ? 'rgba(230,57,70,0.18)' : 'rgba(250,204,21,0.18)', borderBottom: `1px solid ${isOnline ? 'rgba(230,57,70,0.30)' : 'rgba(250,204,21,0.30)'}` }}>
+        <span style={{ color: isOnline ? '#E63946' : '#FACC15', fontSize: 14 }}>{isOnline ? '⚑' : '⚠'}</span>
+        <span className="mono font-bold" style={{ fontSize: 12, color: isOnline ? '#FFB3B3' : '#FDE047', letterSpacing: '0.04em' }}>
+          {isOnline ? 'EMERGENCY REPORTING ACTIVE — Help is being dispatched to your location' : 'OFFLINE MODE — Reports will be queued and sent when connection is restored'}
         </span>
-        <span className="w-2 h-2 rounded-full animate-ping-slow ml-1" style={{ background: '#E63946' }} />
+        {isOnline && <span className="w-2 h-2 rounded-full animate-ping-slow ml-1" style={{ background: '#E63946' }} />}
       </div>
 
       {/* Ambient glow orbs */}
@@ -269,11 +314,15 @@ function SOSForm() {
             {/* STEP 4 — Confirmation */}
             {step === 4 && result && (
               <div className="text-center space-y-5 animate-slide-up py-2">
-                <div className="text-5xl animate-bounce">✅</div>
+                <div className="text-5xl animate-bounce">{result.offline ? '📡' : '✅'}</div>
                 <div>
-                  <h2 className="font-extrabold text-white" style={{ fontSize: 22 }}>Alert Received!</h2>
+                  <h2 className="font-extrabold text-white" style={{ fontSize: 22 }}>
+                    {result.offline ? 'Alert Queued' : 'Alert Received!'}
+                  </h2>
                   <p className="mt-1" style={{ fontSize: 14, color: 'rgba(232,234,240,0.55)' }}>
-                    Our response team has been notified immediately.
+                    {result.offline 
+                      ? 'You are offline. We will dispatch this immediately when connection is restored.'
+                      : 'Our response team has been notified immediately.'}
                   </p>
                 </div>
                 <div className="rounded-xl p-4 text-left space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.10)' }}>
@@ -285,7 +334,7 @@ function SOSForm() {
                         {result.severity}
                       </span>
                     )],
-                    ['Status', <span className="mono text-green-400">DISPATCHED</span>],
+                    ['Status', <span className={`mono ${result.offline ? 'text-yellow-400' : 'text-green-400'}`}>{result.offline ? 'QUEUED' : 'DISPATCHED'}</span>],
                   ].map(([label, val]) => (
                     <div key={label} className="flex justify-between items-center text-sm">
                       <span style={{ color: 'rgba(232,234,240,0.45)' }}>{label}</span>
@@ -293,11 +342,20 @@ function SOSForm() {
                     </div>
                   ))}
                 </div>
-                <div className="px-4 py-3 rounded-xl" style={{ background: 'rgba(45,198,83,0.10)', border: '0.5px solid rgba(45,198,83,0.30)' }}>
-                  <p style={{ fontSize: 13, color: '#2DC653' }}>
-                    ✓ Emergency services have been coordinated. Stay calm and follow staff instructions.
-                  </p>
-                </div>
+                {!result.offline && (
+                  <div className="px-4 py-3 rounded-xl" style={{ background: 'rgba(45,198,83,0.10)', border: '0.5px solid rgba(45,198,83,0.30)' }}>
+                    <p style={{ fontSize: 13, color: '#2DC653' }}>
+                      ✓ Emergency services have been coordinated. Stay calm and follow staff instructions.
+                    </p>
+                  </div>
+                )}
+                {result.offline && (
+                  <div className="px-4 py-3 rounded-xl" style={{ background: 'rgba(250,204,21,0.10)', border: '0.5px solid rgba(250,204,21,0.30)' }}>
+                    <p style={{ fontSize: 13, color: '#FACC15' }}>
+                      ⚠ Keep your window open. We will attempt to send this alert automatically.
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={() => { setStep(1); setResult(null); setType(''); setZone(''); setDesc(''); }}
                   className="btn-ghost w-full"

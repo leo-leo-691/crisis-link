@@ -20,23 +20,32 @@ export default function IncidentDetailPage() {
 function IncidentDetail() {
   const { id } = useParams();
   const router = useRouter();
-  const user   = useAuthStore(s => s.user);
+  const { user } = useAuthStore();
   const token  = useAuthStore(s => s.token);
   const { fetchIncident, updateStatus, toggleTask, sendMessage } = useIncidentStore();
   const joinIncident = useSocketStore(s => s.joinIncident);
   const addToast     = useUIStore(s => s.addToast);
 
-  const [data, setData]           = useState(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const data = useIncidentStore(s => s.activeIncident);
+  
   const [activeTab, setActiveTab] = useState('overview');
   const [debrief, setDebrief]     = useState(null);
   const [followup, setFollowup]   = useState(null);
   const [loadingAI, setLoadingAI] = useState('');
   const [chatMsg, setChatMsg]     = useState('');
   const [chatSending, setChatSending] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [togglingTasks, setTogglingTasks] = useState({});
+
+  useEffect(() => {
+    if (!user) { router.push('/login'); return; }
+    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+  }, [user]);
 
   const load = async () => {
-    const d = await fetchIncident(id);
-    setData(d);
+    await fetchIncident(id);
+    setLoadingInitial(false);
   };
 
   useEffect(() => {
@@ -46,23 +55,23 @@ function IncidentDetail() {
     }
   }, [id]);
 
-  // Listen for realtime updates
-  const socket = useSocketStore(s => s.socket);
-  useEffect(() => {
-    if (!socket) return;
-    const handler = () => load();
-    socket.on('incident:updated', handler);
-    socket.on('incident:message', handler);
-    socket.on('incident:task', handler);
-    return () => { socket.off('incident:updated', handler); socket.off('incident:message', handler); socket.off('incident:task', handler); };
-  }, [socket]);
+  // Realtime updates are handled globally via socketStore.js
 
   const handleStatusChange = async (newStatus) => {
     try {
+      setUpdatingStatus(newStatus);
       await updateStatus(id, newStatus);
       addToast({ message: `Status → ${newStatus}`, type: 'success' });
-      load();
     } catch (e) { addToast({ message: e.message, type: 'error' }); }
+    finally { setUpdatingStatus(null); }
+  };
+
+  const handleToggleTask = async (taskId) => {
+    try {
+      setTogglingTasks(prev => ({ ...prev, [taskId]: true }));
+      await toggleTask(id, taskId);
+    } catch (e) { addToast({ message: e.message, type: 'error' }); }
+    finally { setTogglingTasks(prev => ({ ...prev, [taskId]: false })); }
   };
 
   const generateDebrief = async () => {
@@ -100,7 +109,7 @@ function IncidentDetail() {
     <div className="flex h-screen bg-navy">
       <Sidebar />
       <main className="flex-1 flex flex-col items-center justify-center text-muted gap-4">
-        {!data ? (
+        {loadingInitial ? (
           <div className="skeleton w-12 h-12 rounded-full" />
         ) : (
           <>
@@ -148,16 +157,17 @@ function IncidentDetail() {
                 <div key={s} className="flex items-center flex-1">
                   <button
                     onClick={() => next && handleStatusChange(s)}
-                    disabled={!next || incident.status === 'resolved'}
+                    disabled={!next || incident.status === 'resolved' || updatingStatus === s}
                     className={`
                       flex-1 py-1.5 px-2 text-xs font-semibold text-center rounded-lg transition-all capitalize
                       ${current ? 'bg-steelblue text-white' : ''}
                       ${past ? 'bg-emerald-500/20 text-emerald-300' : ''}
-                      ${next ? 'bg-white/8 text-white hover:bg-steelblue/30 cursor-pointer' : ''}
+                      ${next && !updatingStatus ? 'bg-white/8 text-white hover:bg-steelblue/30 cursor-pointer' : ''}
+                      ${next && updatingStatus ? 'bg-white/8 text-white opacity-50 cursor-not-allowed' : ''}
                       ${!past && !current && !next ? 'text-muted bg-white/4' : ''}
                     `}
                   >
-                    {past ? '✓' : ''} {s}
+                    {updatingStatus === s ? '⏳' : past ? '✓' : ''} {s}
                   </button>
                   {i < STATUS_ORDER.length - 1 && <div className="w-4 h-0.5 bg-white/10 flex-shrink-0" />}
                 </div>
@@ -246,8 +256,9 @@ function IncidentDetail() {
                   <input
                     type="checkbox"
                     checked={!!task.is_complete}
-                    onChange={() => toggleTask(id, task.id).then(load)}
-                    className="w-4 h-4 accent-emerald-400"
+                    onChange={() => handleToggleTask(task.id)}
+                    disabled={togglingTasks[task.id]}
+                    className="w-4 h-4 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span className={`text-sm ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
                   <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${

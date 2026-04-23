@@ -5,8 +5,9 @@ const { Server } = require('socket.io');
 const { setIO } = require('./lib/socket');
 
 const dev  = process.env.NODE_ENV !== 'production';
-const port = parseInt(process.env.PORT || '3000', 10);
-const app  = next({ dev, hostname: 'localhost', port });
+const port = parseInt(process.env.PORT || '8080', 10);
+const hostname = process.env.HOSTNAME || '0.0.0.0';
+const app  = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -23,7 +24,7 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
   });
 
   // Register singleton so API routes can emit events
@@ -64,8 +65,8 @@ app.prepare().then(() => {
     process.exit(1);
   });
 
-  httpServer.listen(port, () => {
-    console.log(`✅ CrisisLink ready — http://localhost:${port}`);
+  httpServer.listen(port, hostname, () => {
+    console.log(`✅ CrisisLink ready — http://${hostname}:${port}`);
     console.log(`   Demo login: admin@grandhotel.com / demo1234`);
   });
 });

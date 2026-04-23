@@ -1,7 +1,11 @@
 const { NextResponse } = require('next/server');
+import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request, { params }) {
   try {
+    const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const db = require('@/lib/db');
     const { id } = params;
 
