@@ -34,8 +34,8 @@ export default function EscalationTimer({ createdAt, status }) {
       <p className="text-sm text-white/85">Response window: {remaining}s</p>
       <div className="w-full h-[6px] rounded-full bg-white/10 overflow-hidden">
         <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${width}%`, background: barColor }}
+          className="h-full rounded-full transition-all origin-left"
+          style={{ transform: `scaleX(${width / 100})`, background: barColor }}
         />
       </div>
     </div>

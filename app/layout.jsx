@@ -1,4 +1,6 @@
 import './globals.css';
+import Script from 'next/script';
+import PublicPageEffects from '@/components/PublicPageEffects';
 
 export const metadata = {
   title: 'CrisisLink — Emergency Response Platform',
@@ -23,9 +25,11 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <Script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js" strategy="beforeInteractive" />
       </head>
 
       <body className="bg-navy text-white antialiased">
+        <PublicPageEffects />
         <OfflineBanner />
         {children}
       </body>

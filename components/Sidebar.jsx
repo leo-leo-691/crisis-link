@@ -39,8 +39,6 @@ export default function Sidebar() {
   const logout     = useAuthStore(s => s.logout);
   const connected  = useSocketStore(s => s.connected);
   const drillMode  = useUIStore(s => s.drillMode);
-  const isDark     = useUIStore(s => s.isDarkMode);
-  const toggleDark = useUIStore(s => s.toggleDark);
   const pathname   = usePathname();
   const router = useRouter();
   const incidents  = useIncidentStore(s => s.incidents);
@@ -170,16 +168,6 @@ export default function Sidebar() {
             </span>
           </div>
         )}
-
-        {/* Dark mode toggle */}
-        <button
-          onClick={toggleDark}
-          className="flex items-center w-full rounded-lg transition-all hover:bg-white/5"
-          style={{ height: 38, gap: 10, padding: collapsed ? '0 16px' : '0 12px', justifyContent: collapsed ? 'center' : 'flex-start', color: 'rgba(232,234,240,0.40)' }}
-        >
-          <span style={{ fontSize: 14, flexShrink: 0 }}>{isDark ? '🌙' : '☀️'}</span>
-          {!collapsed && <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{isDark ? 'Dark Mode' : 'Light Mode'}</span>}
-        </button>
 
         {/* User */}
         {user && (

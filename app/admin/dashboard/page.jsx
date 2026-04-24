@@ -79,7 +79,7 @@ export default function AdminDashboard() {
 }
 
 function DashboardContent() {
-  const { user }  = useAuthStore();
+  const { user, loading }  = useAuthStore();
   const router    = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
@@ -95,9 +95,10 @@ function DashboardContent() {
   const [showBroadcastOverlay, setShowBroadcastOverlay] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const load = useCallback(async () => {
     await fetchIncidents({});
@@ -314,18 +315,18 @@ function DashboardContent() {
               />
               <StatCard
                 label="Total Today"
-                value={analytics?.summary?.total}
+                value={analytics?.todayIncidents}
                 icon="📋"
                 accentColor="rgba(232,234,240,0.85)"
               />
               <StatCard
                 label="Resolved"
-                value={analytics?.summary?.resolved}
+                value={analytics?.resolvedIncidents}
                 icon="✅"
                 accentColor="#2DC653"
                 borderColor="rgba(45,198,83,0.20)"
                 highlight="#2DC653"
-                sub={`Avg ${analytics?.avgResponseMinutes || 0}m response`}
+                sub={`Avg ${analytics?.avgResolutionMinutes || 0}m response`}
               />
             </div>
           </div>

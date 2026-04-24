@@ -1,238 +1,226 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function VenueMap({ zones = [], incidents = [], selectedZone, mode = 'live', onZoneClick }) {
-  const [tooltip, setTooltip] = useState(null);
+export default function VenueMap({ incidents = [], onZoneClick }) {
+  const [zones, setZones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hoveredZone, setHoveredZone] = useState(null);
 
-  const activeByZone = {};
-  for (const inc of incidents) {
-    if (inc.status !== 'resolved') {
-      activeByZone[inc.zone] = (activeByZone[inc.zone] || 0) + 1;
-    }
+  useEffect(() => {
+    fetch('/api/zones')
+      .then(r => r.json())
+      .then(data => {
+        setZones(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load zones:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  function getZoneSeverity(zoneName) {
+    const zoneIncidents = incidents.filter(
+      i => i.zone === zoneName && i.status !== 'resolved' && !i.is_drill
+    );
+    if (zoneIncidents.some(i => i.severity === 'critical')) return 'critical';
+    if (zoneIncidents.some(i => i.severity === 'high')) return 'high';
+    if (zoneIncidents.some(i => i.severity === 'medium')) return 'medium';
+    if (zoneIncidents.some(i => i.severity === 'low')) return 'low';
+    return 'none';
   }
-  const activeNonDrillByZone = {};
-  for (const inc of incidents) {
-    if (inc.status !== 'resolved' && !inc.is_drill) {
-      activeNonDrillByZone[inc.zone] = (activeNonDrillByZone[inc.zone] || 0) + 1;
-    }
-  }
 
-  const getSeverityForZone = (zoneName) => {
-    const zoneIncs = incidents.filter(i => i.zone === zoneName && i.status !== 'resolved');
-    if (!zoneIncs.length) return null;
-    if (zoneIncs.some(i => i.severity === 'critical')) return 'critical';
-    if (zoneIncs.some(i => i.severity === 'high')) return 'high';
-    if (zoneIncs.some(i => i.severity === 'medium')) return 'medium';
-    return 'low';
-  };
-
-  const sevColors = {
-    critical: { fill: 'rgba(230,57,70,0.25)',  stroke: '#E63946', glow: true, pulse: true },
-    high:     { fill: 'rgba(244,162,97,0.25)', stroke: '#F4A261', glow: false, pulse: false },
-    medium:   { fill: 'rgba(250,204,21,0.20)', stroke: '#FACC15', glow: false, pulse: false },
-    low:      { fill: 'rgba(69,123,157,0.20)', stroke: '#457B9D', glow: false, pulse: false },
-  };
-
-  const getHeatmapColor = (count, max) => {
-    if (!count) return { fill: 'rgba(255,255,255,0.02)', stroke: 'rgba(255,255,255,0.08)' };
-    const opacity = Math.min(0.2 + (count / max) * 0.7, 0.8);
-    return {
-      fill: `rgba(69, 123, 157, ${opacity})`,
-      stroke: `rgba(168, 218, 220, ${opacity + 0.1})`,
-      glow: opacity > 0.4
+  function getZoneFill(severity) {
+    const fills = {
+      critical: 'rgba(230,57,70,0.35)',
+      high: 'rgba(244,162,97,0.35)',
+      medium: 'rgba(250,204,21,0.30)',
+      low: 'rgba(69,123,157,0.30)',
+      none: 'rgba(255,255,255,0.06)'
     };
-  };
+    return fills[severity] || fills.none;
+  }
 
-  const maxCount = Math.max(...zones.map(z => z.count || 0), 1);
+  function getZoneStroke(severity) {
+    const strokes = {
+      critical: 'rgba(230,57,70,0.9)',
+      high: 'rgba(244,162,97,0.9)',
+      medium: 'rgba(250,204,21,0.9)',
+      low: 'rgba(69,123,157,0.9)',
+      none: 'rgba(255,255,255,0.15)'
+    };
+    return strokes[severity] || strokes.none;
+  }
+
+  function getActiveIncidentsInZone(zoneName) {
+    return incidents.filter(
+      i => i.zone === zoneName && i.status !== 'resolved' && !i.is_drill
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-white/40 text-sm animate-pulse">Loading venue map...</div>
+      </div>
+    );
+  }
+
+  if (zones.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-white/40 text-sm">No zones configured</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative select-none overflow-hidden rounded-xl border border-white/5 shadow-2xl">
-      <style jsx>{`
-        @keyframes scan {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100%); }
-        }
-        .scan-line {
-          position: absolute;
-          width: 100%;
-          height: 2px;
-          background: linear-gradient(to right, transparent, rgba(69,123,157,0.2), transparent);
-          box-shadow: 0 0 15px rgba(69,123,157,0.1);
-          animation: scan 8s linear infinite;
-          z-index: 5;
-          pointer-events: none;
-        }
-      `}</style>
-      
-      <div className="scan-line" />
-
+    <div className="w-full h-full relative">
       <svg
-        viewBox="0 0 830 500"
-        className="w-full bg-[#070b14]"
+        viewBox="0 0 800 500"
+        className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <rect width="800" height="500" fill="#0A0F1E" />
+
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+            <path
+              d="M 40 0 L 0 0 0 40"
+              fill="none"
+              stroke="rgba(255,255,255,0.04)"
+              strokeWidth="0.5"
+            />
           </pattern>
-          <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="0.5" fill="rgba(255,255,255,0.05)" />
-          </pattern>
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-           <linearGradient id="zoneGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-          </linearGradient>
         </defs>
+        <rect width="800" height="500" fill="url(#grid)" />
 
-        <rect width="830" height="500" fill="url(#grid)" />
-        <rect width="830" height="500" fill="url(#dots)" />
-
-        <text x="35" y="42" fill="white" fontSize="12" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1">
-          {mode === 'heatmap' ? 'ANALYTICS HEATMAP' : 'E.O.C. OVERLAY'} <tspan fill="rgba(255,255,255,0.4)" fontWeight="400">v2.4.0</tspan>
+        <text
+          x="400"
+          y="18"
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.25)"
+          fontSize="10"
+          fontFamily="monospace"
+          letterSpacing="2"
+        >
+          GRAND HOTEL - LIVE FLOOR PLAN
         </text>
 
-        {zones.map(zone => {
-          const zoneName = zone.name || zone.zone;
-          if (!zone.map_x) return null;
-          
-          let cfg;
-          let currentCount = 0;
+        <text x="20" y="175" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">FLOORS</text>
+        <text x="20" y="315" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">AMENITIES</text>
+        <text x="20" y="435" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">GROUND</text>
 
-          if (mode === 'heatmap') {
-            currentCount = zone.count || 0;
-            cfg = getHeatmapColor(currentCount, maxCount);
-          } else {
-            const sev = getSeverityForZone(zoneName);
-            cfg = sev ? sevColors[sev] : { fill: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.10)' };
-            currentCount = activeByZone[zoneName] || 0;
-          }
+        {zones.map((zone) => {
+          const severity = getZoneSeverity(zone.name);
+          const fill = getZoneFill(severity);
+          const stroke = getZoneStroke(severity);
+          const activeIncidents = getActiveIncidentsInZone(zone.name);
+          const isHovered = hoveredZone === zone.name;
+          const cx = zone.map_x + zone.map_width / 2;
+          const cy = zone.map_y + zone.map_height / 2;
 
           return (
-            <g
-              key={zone.id || zoneName}
-              onClick={() => onZoneClick?.(zoneName)}
-              className="transition-all duration-300"
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={(e) => {
-                setTooltip({ name: zoneName, x: zone.map_x + zone.map_width / 2, y: zone.map_y, count: currentCount });
-              }}
-              onMouseLeave={() => setTooltip(null)}
-            >
-              {cfg?.pulse && (
-                <rect
-                  x={zone.map_x - 4}
-                  y={zone.map_y - 4}
-                  width={zone.map_width + 8}
-                  height={zone.map_height + 8}
-                  rx={10}
-                  fill="none"
-                  stroke={cfg.stroke}
-                  strokeWidth="2"
-                  className="animate-ping"
-                  opacity="0.3"
-                  style={{ animationDuration: '2s' }}
-                />
-              )}
-
+            <g key={zone.id || zone.name}>
               <rect
                 x={zone.map_x}
                 y={zone.map_y}
                 width={zone.map_width}
                 height={zone.map_height}
-                rx={8}
-                fill={cfg.fill}
-                stroke={cfg.stroke}
-                strokeWidth={cfg.stroke !== 'rgba(255,255,255,0.10)' ? 2 : 1}
-                filter={cfg?.glow ? 'url(#glow)' : undefined}
-                className="transition-colors duration-500"
+                fill={isHovered ? fill.replace(/[\d.]+\)$/, '0.5)') : fill}
+                stroke={stroke}
+                strokeWidth={severity !== 'none' ? 1.5 : 0.5}
+                rx="6"
+                style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                onClick={() => onZoneClick && onZoneClick(zone.name)}
+                onMouseEnter={() => setHoveredZone(zone.name)}
+                onMouseLeave={() => setHoveredZone(null)}
               />
 
-              {mode !== 'heatmap' && (activeNonDrillByZone[zoneName] || 0) > 0 && (
-                <g>
-                  <circle
-                    cx={zone.map_x + (zone.map_width / 2)}
-                    cy={zone.map_y + (zone.map_height / 2)}
-                    r="8"
-                    fill={cfg.stroke}
-                  />
-                  <circle
-                    cx={zone.map_x + (zone.map_width / 2)}
-                    cy={zone.map_y + (zone.map_height / 2)}
-                    r="8"
-                    fill={cfg.stroke}
-                    className="animate-ping"
-                    opacity="0.5"
-                  />
-                </g>
-              )}
-              
               <text
-                x={zone.map_x + zone.map_width / 2}
-                y={zone.map_y + zone.map_height / 2 - (currentCount > 0 ? 8 : 0)}
+                x={cx}
+                y={cy - (activeIncidents.length > 0 ? 8 : 0)}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={cfg?.stroke && mode !== 'heatmap' ? 'white' : 'rgba(255,255,255,0.4)'}
+                fill="rgba(255,255,255,0.75)"
                 fontSize="10"
-                fontFamily="Inter, sans-serif"
-                fontWeight="700"
-                className="uppercase tracking-wide"
+                fontFamily="monospace"
+                style={{ pointerEvents: 'none', userSelect: 'none' }}
               >
-                {zoneName}
+                {zone.name}
               </text>
 
-              {currentCount > 0 && (
+              {activeIncidents.length > 0 && (
+                <text
+                  x={cx}
+                  y={cy + 10}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="rgba(230,57,70,0.9)"
+                  fontSize="9"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {activeIncidents.length} ACTIVE
+                </text>
+              )}
+
+              {activeIncidents.length > 0 && (
                 <g>
-                   <rect
-                    x={zone.map_x + zone.map_width / 2 - 25}
-                    y={zone.map_y + zone.map_height / 2 + 4}
-                    width="50"
-                    height="14"
-                    rx="4"
-                    fill="rgba(0,0,0,0.2)"
+                  <circle
+                    className="map-pin"
+                    cx={zone.map_x + zone.map_width - 12}
+                    cy={zone.map_y + 12}
+                    r="6"
+                    fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
+                    opacity="0.9"
                   />
-                  <text
-                    x={zone.map_x + zone.map_width / 2}
-                    y={zone.map_y + zone.map_height / 2 + 11}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill={cfg?.stroke || 'white'}
-                    fontSize="8"
-                    fontWeight="800"
+                  <circle
+                    className="map-pin"
+                    cx={zone.map_x + zone.map_width - 12}
+                    cy={zone.map_y + 12}
+                    r="6"
+                    fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
+                    opacity="0.4"
                   >
-                    {currentCount} {mode === 'heatmap' ? 'TOTAL' : 'ACTIVE'}
-                  </text>
+                    <animate
+                      attributeName="r"
+                      values="6;14;6"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0.4;0;0.4"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
                 </g>
               )}
             </g>
           );
         })}
 
-        {tooltip && (
+        {hoveredZone && (
           <g>
             <rect
-              x={tooltip.x - 70}
-              y={tooltip.y - 45}
-              width="140"
-              height="30"
-              rx="6"
-              fill="rgba(13,18,32,0.95)"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="1"
+              x="10"
+              y="470"
+              width="200"
+              height="22"
+              fill="rgba(0,0,0,0.8)"
+              rx="4"
             />
             <text
-              x={tooltip.x}
-              y={tooltip.y - 25}
-              textAnchor="middle"
+              x="20"
+              y="485"
               fill="white"
-              fontSize="10"
-              fontWeight="700"
-              className="uppercase"
+              fontSize="11"
+              fontFamily="monospace"
             >
-              {tooltip.name} {tooltip.count > 0 ? `× ${tooltip.count}` : ''}
+              {hoveredZone} - Click to view incidents
             </text>
           </g>
         )}

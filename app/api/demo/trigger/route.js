@@ -1,4 +1,5 @@
 const { NextResponse } = require('next/server');
+export const dynamic = 'force-dynamic';
 
 const INCIDENT_TYPES = ['fire', 'medical', 'security', 'flood', 'evacuation', 'other'];
 const SEVERITIES = ['low', 'medium', 'high', 'critical'];
@@ -54,7 +55,7 @@ export async function POST(request) {
         created_at: now,
         updated_at: now,
       })
-      .select('*')
+      .select('id, type, severity, status, zone, room_number, reporter_name, reporter_type, description, description_translated, detected_language, ai_triage, ai_provider, evacuation_route, recommended_responder, is_drill, created_at, updated_at, resolved_at')
       .single();
     if (incError) throw incError;
 
@@ -73,15 +74,20 @@ export async function POST(request) {
     });
     if (timeError) throw timeError;
 
-    const io = getIO();
-    if (io) {
-      io.emit('incident:new', incident);
-      io.emit('incident:updated', incident);
-      const { count } = await supabase
-        .from('incidents')
-        .select('id', { count: 'exact', head: true })
-        .neq('status', 'resolved');
-      io.emit('live_count', { count: count || 0 });
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('incident:new', incident);
+        io.emit('incident:updated', incident);
+        const { count } = await supabase
+          .from('incidents')
+          .select('id', { count: 'exact', head: true })
+          .neq('status', 'resolved')
+          .eq('is_drill', false);
+        io.emit('live_count', { count: count || 0 });
+      }
+    } catch (socketError) {
+      console.error('[POST /api/demo/trigger] Socket emit failed:', socketError);
     }
 
     return NextResponse.json({ incident, provider }, { status: 201 });

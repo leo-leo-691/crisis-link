@@ -1,9 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
-
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://crisislink.example.com';
 
 const QR_ZONES = [
   { id: 'lobby',       name: 'Lobby',           room: null },
@@ -19,11 +17,20 @@ const QR_ZONES = [
 ];
 
 function QRCard({ zone }) {
-  const url = `${BASE_URL}/sos?zone=${encodeURIComponent(zone.name)}${zone.room ? `&room=${zone.room}` : ''}`;
+  const [baseUrl, setBaseUrl] = useState('');
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
+
+  const url = baseUrl ? `${baseUrl}/sos?zone=${encodeURIComponent(zone.name)}${zone.room ? `&room=${zone.room}` : ''}` : '';
   // Use a public QR generation API
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&color=ffffff&bgcolor=1A2035`;
+  const qrSrc = url
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&color=ffffff&bgcolor=1A2035`
+    : '';
 
   const download = async () => {
+    if (!qrSrc) return;
     const a = document.createElement('a');
     a.href = qrSrc;
     a.download = `crisislink-qr-${zone.id}.png`;
@@ -31,6 +38,7 @@ function QRCard({ zone }) {
   };
 
   const copyLink = () => {
+    if (!url) return;
     navigator.clipboard.writeText(url);
   };
 
@@ -38,11 +46,15 @@ function QRCard({ zone }) {
     <div className="glass p-5 flex flex-col items-center gap-3 hover:border-steelblue/30 transition-all group">
       <div className="w-10 h-10 rounded-xl bg-white/8 flex items-center justify-center text-xl">📍</div>
       <p className="font-semibold text-white text-sm">{zone.name}</p>
-      <div className="rounded-xl overflow-hidden border border-white/10">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrSrc} alt={`QR for ${zone.name}`} width={160} height={160} className="block" />
+      <div className="rounded-xl overflow-hidden border border-white/10 min-h-[160px] min-w-[160px] flex items-center justify-center bg-white/5">
+        {qrSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={qrSrc} alt={`QR for ${zone.name}`} width={160} height={160} className="block" />
+        ) : (
+          <span className="text-xs text-white/35">Generating QR...</span>
+        )}
       </div>
-      <p className="text-[9px] text-muted font-mono text-center break-all max-w-[160px]">{url}</p>
+      <p className="text-[9px] text-muted font-mono text-center break-all max-w-[160px]">{url || 'Preparing zone link...'}</p>
       <div className="flex gap-2">
         <button
           onClick={copyLink}

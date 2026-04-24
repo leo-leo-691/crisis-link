@@ -1,88 +1,114 @@
 const { NextResponse } = require('next/server');
 
 const VALID_TRANSITIONS = {
-  reported:     ['acknowledged', 'responding', 'resolved'],
+  reported: ['acknowledged', 'responding', 'resolved'],
   acknowledged: ['responding', 'contained', 'resolved'],
-  responding:   ['contained', 'resolved'],
-  contained:    ['resolved'],
-  resolved:     [],
+  responding: ['contained', 'resolved'],
+  contained: ['resolved'],
+  resolved: [],
 };
 
-const DEBRIEF_SYSTEM_PROMPT = 'You are a hospitality safety analyst. Return ONLY valid JSON with these exact keys: executive_summary (string, 2 sentences), what_went_well (array of 3 strings), areas_for_improvement (array of 3 strings), root_cause_analysis (string, one paragraph), recommendations (array of 4 strings), training_recommendations (array of 2 strings)';
+const INCIDENT_COLUMNS = [
+  'id',
+  'type',
+  'severity',
+  'status',
+  'zone',
+  'room_number',
+  'reporter_name',
+  'reporter_type',
+  'description',
+  'description_translated',
+  'detected_language',
+  'ai_triage',
+  'ai_provider',
+  'evacuation_route',
+  'recommended_responder',
+  'debrief_report',
+  'resolved_at',
+  'is_drill',
+  'created_at',
+  'updated_at',
+].join(', ');
+
+function jsonNoStore(payload, init = {}) {
+  return NextResponse.json(payload, {
+    ...init,
+    headers: {
+      'Cache-Control': 'no-store',
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function emitSafely(callback) {
+  try {
+    const { getIO } = require('@/lib/socket');
+    const io = getIO();
+    if (io) {
+      await callback(io);
+    }
+  } catch (socketError) {
+    console.error('[PATCH /api/incidents/:id/status] Socket emit failed:', socketError);
+  }
+}
 
 async function generateAndStoreDebrief(incidentId, incidentSnapshot) {
   try {
     const supabase = require('@/lib/supabase');
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const { getIO } = require('@/lib/socket');
+    const { generateDebriefReport } = require('@/lib/aiTriage');
 
-    if (!process.env.GEMINI_API_KEY) return;
-
-    const [{ data: timeline, error: timeError }, { data: tasks, error: tasksError }] = await Promise.all([
-      supabase.from('incident_timeline').select('id').eq('incident_id', incidentId),
-      supabase.from('incident_tasks').select('is_complete').eq('incident_id', incidentId),
+    const [{ data: timeline, error: timeError }, { data: tasks, error: tasksError }, { data: messages, error: msgError }] = await Promise.all([
+      supabase.from('incident_timeline').select('actor, action, created_at').eq('incident_id', incidentId).order('created_at', { ascending: true }),
+      supabase.from('incident_tasks').select('title, priority, is_complete').eq('incident_id', incidentId).order('id', { ascending: true }),
+      supabase.from('incident_messages').select('sender_name, message, created_at').eq('incident_id', incidentId).order('created_at', { ascending: true }),
     ]);
     if (timeError) throw timeError;
     if (tasksError) throw tasksError;
+    if (msgError) throw msgError;
 
-    const timelineCount = (timeline || []).length;
-    const tasksCompletedCount = (tasks || []).filter((task) => task.is_complete).length;
-    const resolutionTimeMinutes = Math.max(
-      1,
-      Math.round((Date.now() - new Date(incidentSnapshot.created_at).getTime()) / 60000)
-    );
+    const report = await generateDebriefReport(incidentSnapshot, timeline || [], tasks || [], messages || []);
 
-    const prompt = `${DEBRIEF_SYSTEM_PROMPT}
-
-Incident type: ${incidentSnapshot.type}
-Zone: ${incidentSnapshot.zone}
-Description: ${incidentSnapshot.description || 'N/A'}
-Resolution time in minutes: ${resolutionTimeMinutes}
-Timeline entries count: ${timelineCount}
-Tasks completed count: ${tasksCompletedCount}`;
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    const result = await model.generateContent(prompt);
-    const raw = result.response.text().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(raw);
-
-    const { data: updatedWithDebrief, error: updateError } = await supabase
+    const { data: updatedIncident, error: updateError } = await supabase
       .from('incidents')
-      .update({ debrief_report: JSON.stringify(parsed), updated_at: new Date().toISOString() })
+      .update({ debrief_report: JSON.stringify(report), updated_at: new Date().toISOString() })
       .eq('id', incidentId)
-      .select('*')
+      .select(INCIDENT_COLUMNS)
       .maybeSingle();
     if (updateError) throw updateError;
-    const io = getIO();
-    if (io && updatedWithDebrief) io.emit('incident:updated', updatedWithDebrief);
+
+    await emitSafely(async (io) => {
+      io.emit('incident:updated', updatedIncident);
+    });
+
+    return updatedIncident;
   } catch (error) {
     console.error('[Auto Debrief] Failed to generate/store report:', error.message);
+    return incidentSnapshot;
   }
 }
 
 export async function PATCH(request, { params }) {
   try {
     const supabase = require('@/lib/supabase');
-    const { getIO } = require('@/lib/socket');
     const { getUserFromRequest } = require('@/lib/auth');
 
     const { id } = params;
     const { status } = await request.json();
     const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: incident, error: incError } = await supabase
       .from('incidents')
-      .select('*')
+      .select(INCIDENT_COLUMNS)
       .eq('id', id)
       .maybeSingle();
     if (incError) throw incError;
-    if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!incident) return jsonNoStore({ error: 'Not found' }, { status: 404 });
 
     const allowed = VALID_TRANSITIONS[incident.status] || [];
     if (!allowed.includes(status)) {
-      return NextResponse.json({
+      return jsonNoStore({
         error: `Cannot transition from "${incident.status}" to "${status}"`,
         allowed,
       }, { status: 422 });
@@ -97,7 +123,6 @@ export async function PATCH(request, { params }) {
       .eq('id', id);
     if (updateError) throw updateError;
 
-    // Timeline entry
     const actorName = user?.name || 'System';
     const { error: timeError } = await supabase.from('incident_timeline').insert({
       incident_id: id,
@@ -109,21 +134,23 @@ export async function PATCH(request, { params }) {
 
     const { data: updatedIncident, error: upError } = await supabase
       .from('incidents')
-      .select('*')
+      .select(INCIDENT_COLUMNS)
       .eq('id', id)
       .maybeSingle();
     if (upError) throw upError;
-    const io = getIO();
-    if (io) io.emit('incident:updated', updatedIncident);
 
+    await emitSafely(async (io) => {
+      io.emit('incident:updated', updatedIncident);
+    });
+
+    let responseIncident = updatedIncident;
     if (status === 'resolved') {
-      // Fire-and-forget generation to keep status update fast.
-      generateAndStoreDebrief(id, updatedIncident);
+      responseIncident = await generateAndStoreDebrief(id, updatedIncident);
     }
 
-    return NextResponse.json({ incident: updatedIncident });
+    return jsonNoStore(responseIncident);
   } catch (err) {
     console.error('[PATCH /api/incidents/:id/status]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return jsonNoStore({ error: err.message }, { status: 500 });
   }
 }

@@ -21,7 +21,7 @@ export default function IncidentDetailPage() {
 function IncidentDetail() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const token  = useAuthStore(s => s.token);
   const { fetchIncident, updateStatus, toggleTask, sendMessage } = useIncidentStore();
   const joinIncident = useSocketStore(s => s.joinIncident);
@@ -47,9 +47,10 @@ function IncidentDetail() {
   const [taskAssignee, setTaskAssignee] = useState('');
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const load = async () => {
     await fetchIncident(id);
@@ -125,7 +126,7 @@ function IncidentDetail() {
       const res = await fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'Failed to load users');
-      setUsers(payload.users || []);
+      setUsers(Array.isArray(payload) ? payload : []);
     } catch (e) {
       addToast({ message: e.message || 'Failed to load users', type: 'error' });
     } finally {
@@ -326,8 +327,8 @@ function IncidentDetail() {
               </div>
               <div className="w-full bg-white/10 rounded-full h-1 mb-4">
                 <div
-                  className="bg-emerald-400 h-1 rounded-full transition-all"
-                  style={{ width: tasks.length ? `${(tasks.filter(t => t.is_complete).length / tasks.length) * 100}%` : '0%' }}
+                  className="bg-emerald-400 h-1 rounded-full transition-all origin-left"
+                  style={{ transform: `scaleX(${tasks.length ? (tasks.filter(t => t.is_complete).length / tasks.length) : 0})` }}
                 />
               </div>
               {tasks.map(task => (

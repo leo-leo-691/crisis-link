@@ -6,15 +6,16 @@ import Link from 'next/link';
 import useAuthStore from '@/lib/stores/authStore';
 
 export default function DemoTriggerPage() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const triggerScenario = async () => {
     setRunning(true);

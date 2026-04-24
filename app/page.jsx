@@ -1,9 +1,47 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import AppProviders from '@/components/AppProviders';
 import useAuthStore from '@/lib/stores/authStore';
-import { motion } from 'framer-motion';
+
+const DEMO_ACCOUNTS = [
+  { email: 'admin@grandhotel.com', password: 'demo1234', role: 'Admin', color: 'rgba(230,57,70,0.20)', border: 'rgba(230,57,70,0.40)', textColor: '#FF6B6B' },
+  { email: 'manager@grandhotel.com', password: 'demo1234', role: 'Manager', color: 'rgba(244,162,97,0.18)', border: 'rgba(244,162,97,0.38)', textColor: '#F4A261' },
+  { email: 'staff@grandhotel.com', password: 'demo1234', role: 'Staff', color: 'rgba(69,123,157,0.20)', border: 'rgba(69,123,157,0.40)', textColor: '#7DBFEF' },
+];
+
+const FEATURE_CARDS = [
+  {
+    eyebrow: 'AI TRIAGE',
+    title: 'Eight-step SOP guidance in seconds',
+    body: 'Every real alert gets severity analysis, recommended actions, evacuation guidance, and a clear do-not-do list.',
+  },
+  {
+    eyebrow: 'LIVE COMMAND',
+    title: 'Venue-wide coordination without tab chaos',
+    body: 'Incidents, map overlays, chat, broadcast, handoff, and timeline live in one response workspace.',
+  },
+  {
+    eyebrow: 'GUEST SOS',
+    title: 'Fast reporting from QR or direct access',
+    body: 'Guests can submit emergencies instantly and track live response status from the confirmation page.',
+  },
+];
+
+function isToday(timestamp) {
+  const d = new Date(timestamp);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+}
+
+function normalizeActiveIncidents(payload) {
+  const incidents = Array.isArray(payload) ? payload : [];
+  return incidents.filter((incident) => incident.status !== 'resolved' && !incident.is_drill);
+}
 
 export default function HomePage() {
   return (
@@ -13,32 +51,17 @@ export default function HomePage() {
   );
 }
 
-/* ── Demo Accounts ───────────────────────────────────── */
-const DEMO_ACCOUNTS = [
-  { email: 'admin@grandhotel.com',  password: 'demo1234', role: 'Admin',    color: 'rgba(230,57,70,0.20)',   border: 'rgba(230,57,70,0.40)',   textColor: '#FF6B6B' },
-  { email: 'manager@grandhotel.com',password: 'demo1234', role: 'Manager',  color: 'rgba(244,162,97,0.18)',  border: 'rgba(244,162,97,0.38)',  textColor: '#F4A261' },
-  { email: 'staff@grandhotel.com',  password: 'demo1234', role: 'Staff',    color: 'rgba(69,123,157,0.20)',  border: 'rgba(69,123,157,0.40)',  textColor: '#7DBFEF' },
-];
-
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.15 } } };
-const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } };
-
-// RECENT_ACTIVITY static data removed in favor of live fetch
-
-/* ── Shield SVG Logo ─────────────────────────────────── */
 function ShieldIcon({ size = 52 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M26 2L4 11V30C4 42.5 14 53.5 26 58C38 53.5 48 42.5 48 30V11L26 2Z"
-        fill="rgba(230,57,70,0.18)" stroke="#E63946" strokeWidth="1.5" strokeLinejoin="round"/>
-      <path d="M26 2L4 11V30C4 42.5 14 53.5 26 58C38 53.5 48 42.5 48 30V11L26 2Z"
-        fill="url(#shield-gradient)" opacity="0.6"/>
-      <path d="M22 28L25 31L31 22" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M26 15V35M18 24H34" stroke="rgba(230,57,70,0.45)" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M26 2L4 11V30C4 42.5 14 53.5 26 58C38 53.5 48 42.5 48 30V11L26 2Z" fill="rgba(230,57,70,0.18)" stroke="#E63946" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M26 2L4 11V30C4 42.5 14 53.5 26 58C38 53.5 48 42.5 48 30V11L26 2Z" fill="url(#shield-gradient)" opacity="0.6" />
+      <path d="M22 28L25 31L31 22" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M26 15V35M18 24H34" stroke="rgba(230,57,70,0.45)" strokeWidth="1" strokeLinecap="round" />
       <defs>
         <linearGradient id="shield-gradient" x1="4" y1="2" x2="48" y2="58" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E63946" stopOpacity="0.3"/>
-          <stop offset="1" stopColor="#E63946" stopOpacity="0"/>
+          <stop stopColor="#E63946" stopOpacity="0.3" />
+          <stop offset="1" stopColor="#E63946" stopOpacity="0" />
         </linearGradient>
       </defs>
     </svg>
@@ -46,39 +69,78 @@ function ShieldIcon({ size = 52 }) {
 }
 
 function HomeContent() {
-  const user    = useAuthStore(s => s.user);
-  const loading = useAuthStore(s => s.loading);
-  const router  = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
+  const login = useAuthStore((s) => s.login);
+  const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [recentIncidents, setRecentIncidents] = useState([]);
-  const [activeCount, setActiveCount] = useState(0);
+  const [analytics, setAnalytics] = useState(null);
+  const [activeIncidents, setActiveIncidents] = useState([]);
   const [demoStarting, setDemoStarting] = useState(false);
   const [demoCountdown, setDemoCountdown] = useState(3);
-  const [demoComplete, setDemoComplete] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !demoStarting) {
       if (user.role === 'admin') router.replace('/admin/dashboard');
       else router.replace('/staff/dashboard');
     }
-  }, [user, loading]);
+  }, [user, loading, router, demoStarting]);
 
   useEffect(() => {
-    const fetchPublicIncidents = async () => {
+    let cancelled = false;
+
+    const loadLiveData = async () => {
       try {
-        const res = await fetch('/api/incidents/public');
-        const data = await res.json();
-        setRecentIncidents(data.incidents || []);
-        setActiveCount(data.totalActive || 0);
-      } catch (err) {
-        console.error('Failed to fetch public incidents:', err);
+        const [analyticsRes, incidentsRes] = await Promise.all([
+          fetch('/api/analytics', { cache: 'no-store' }),
+          fetch('/api/incidents?status=active&is_drill=0', { cache: 'no-store' }),
+        ]);
+
+        const analyticsPayload = await analyticsRes.json();
+        const incidentsPayload = await incidentsRes.json();
+        if (cancelled) return;
+
+        if (analyticsRes.ok) setAnalytics(analyticsPayload);
+        if (incidentsRes.ok) setActiveIncidents(normalizeActiveIncidents(incidentsPayload));
+      } catch (error) {
+        console.error('Failed to load landing page live data:', error);
       }
     };
-    fetchPublicIncidents();
-    const interval = setInterval(fetchPublicIncidents, 10000); // Poll every 10s
-    return () => clearInterval(interval);
+
+    loadLiveData();
+
+    let socketRef = null;
+    import('socket.io-client').then(({ io }) => {
+      if (cancelled) return;
+      socketRef = io(window.location.origin, {
+        transports: ['websocket', 'polling'],
+      });
+
+      socketRef.on('incident:new', (incident) => {
+        if (incident?.is_drill) return;
+        setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 6));
+        if (incident?.created_at && isToday(incident.created_at)) {
+          setAnalytics((current) => current ? { ...current, todayIncidents: (current.todayIncidents || 0) + 1, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1 } : current);
+        }
+      });
+
+      socketRef.on('incident:updated', (incident) => {
+        if (!incident || incident.is_drill) return;
+        setActiveIncidents((current) => {
+          const next = current.map((item) => item.id === incident.id ? { ...item, ...incident } : item);
+          return normalizeActiveIncidents(next);
+        });
+      });
+    }).catch((error) => {
+      console.error('Failed to subscribe to landing page socket feed:', error);
+    });
+
+    return () => {
+      cancelled = true;
+      if (socketRef) socketRef.disconnect();
+    };
   }, []);
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -87,35 +149,43 @@ function HomeContent() {
     if (demoStarting) return;
     try {
       setDemoStarting(true);
-      setDemoCountdown(3);
       for (let sec = 3; sec >= 1; sec -= 1) {
         setDemoCountdown(sec);
         await wait(1000);
       }
 
-      const res = await fetch('/api/demo/trigger', {
+      const demoUser = await login('staff@grandhotel.com', 'demo1234');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
+      await wait(1200);
+
+      const res = await fetch('/api/incidents', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          type: 'medical',
+          zone: 'Lobby',
+          description: '[DRILL] Guest collapse at the main lobby desk. Demo autopilot scenario in progress.',
+          reporter_name: demoUser?.name || 'Demo Operator',
+          reporter_type: 'staff',
+          is_drill: 1,
+        }),
       });
       const payload = await res.json();
-      const incidentId = payload?.incident?.id;
-      if (!incidentId) throw new Error(payload?.error || 'Failed to create demo incident');
+      if (!res.ok || !payload?.incident?.id) {
+        throw new Error(payload?.error || 'Failed to create demo incident');
+      }
+
+      sessionStorage.setItem('crisislink_demo_autopilot', JSON.stringify({
+        active: true,
+        incidentId: payload.incident.id,
+        startedAt: Date.now(),
+        phase: 'created',
+      }));
 
       router.push('/staff/dashboard');
-      await wait(3000);
-      router.push(`/staff/incident/${incidentId}`);
-      await wait(2000);
-      document.querySelector('[data-action="acknowledge"]')?.click();
-      await wait(3000);
-      document.querySelector('[data-action="start-response"]')?.click();
-      await wait(2000);
-      document.querySelector('input[type="checkbox"]')?.click();
-      await wait(2000);
-      document.querySelector('[data-action="mark-contained"]')?.click();
-      await wait(2000);
-      document.querySelector('[data-action="resolve"]')?.click();
-      await wait(1000);
-      setDemoComplete(true);
     } catch (err) {
       console.error('Demo autopilot failed', err);
     } finally {
@@ -131,162 +201,173 @@ function HomeContent() {
     return () => window.removeEventListener('keydown', handler);
   }, [demoStarting]);
 
-  const formatIncident = (inc) => {
-    let icon = '⚠️';
-    let color = 'rgba(244,162,97,0.25)';
-    let border = 'rgba(244,162,97,0.50)';
-
-    if (inc.type === 'fire') { icon = '🔥'; color = 'rgba(230,57,70,0.25)'; border = 'rgba(230,57,70,0.50)'; }
-    else if (inc.type === 'medical') { icon = '🚑'; color = 'rgba(69,123,157,0.25)'; border = 'rgba(69,123,157,0.50)'; }
-    else if (inc.type === 'security') { icon = '🔐'; color = 'rgba(244,162,97,0.25)'; border = 'rgba(244,162,97,0.50)'; }
-    
-    const mins = Math.floor((new Date() - new Date(inc.created_at)) / 60000);
-    const time = mins < 1 ? 'just now' : `${mins}m ago`;
-    const typeStr = inc.type.charAt(0).toUpperCase() + inc.type.slice(1);
-    
-    return { id: inc.id, icon, color, border, text: `${typeStr} alert in ${inc.zone}`, time };
-  };
+  const tickerItems = useMemo(() => {
+    if (activeIncidents.length === 0) {
+      return ['SYSTEM ACTIVE', 'ALL CLEAR', 'MONITORING 14 ZONES', 'AI TRIAGE READY'];
+    }
+    return activeIncidents.map((incident) => `${String(incident.type || 'incident').toUpperCase()} · ${incident.zone} · ${String(incident.severity || 'active').toUpperCase()}`);
+  }, [activeIncidents]);
 
   return (
     <main
-      className="min-h-screen flex items-stretch relative overflow-hidden"
+      className="min-h-screen relative overflow-x-hidden"
       style={{
-        background: 'radial-gradient(ellipse at 20% 50%, rgba(230,57,70,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(69,123,157,0.06) 0%, transparent 50%), #05070F',
+        background: 'radial-gradient(ellipse at 20% 10%, rgba(230,57,70,0.10) 0%, transparent 45%), radial-gradient(ellipse at 80% 15%, rgba(69,123,157,0.08) 0%, transparent 45%), #05070F',
         backgroundImage: `
-          radial-gradient(ellipse at 20% 50%, rgba(230,57,70,0.08) 0%, transparent 60%),
-          radial-gradient(ellipse at 80% 20%, rgba(69,123,157,0.06) 0%, transparent 50%),
+          radial-gradient(ellipse at 20% 10%, rgba(230,57,70,0.10) 0%, transparent 45%),
+          radial-gradient(ellipse at 80% 15%, rgba(69,123,157,0.08) 0%, transparent 45%),
           linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)
         `,
         backgroundSize: 'auto, auto, 60px 60px, 60px 60px',
-        backgroundColor: '#05070F',
       }}
     >
-      {/* Left decorative panel */}
-      <div className="hidden lg:flex flex-col justify-center px-12 w-80 xl:w-96 animate-fade-in delay-200">
-        <div className="glass p-6 space-y-5">
-          <p className="mono text-[10px] uppercase tracking-widest" style={{ color: '#E63946' }}>SYSTEM STATUS</p>
-          <div className="space-y-3">
-            {[
-              { label: 'Emergency Network',  status: 'OPERATIONAL' },
-              { label: 'AI Triage Engine',   status: 'OPERATIONAL' },
-              { label: 'Alert Broadcasting', status: 'OPERATIONAL' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'rgba(232,234,240,0.65)' }}>{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-ping-slow" style={{ boxShadow: '0 0 6px #2DC653' }} />
-                  <span className="mono text-[10px] tracking-wide" style={{ color: '#2DC653' }}>{item.status}</span>
+      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+        <div className="grid lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-6 items-start">
+          <aside className="animate-on-scroll hidden lg:block">
+            <div className="glass p-6 space-y-5">
+              <p className="mono text-[10px] uppercase tracking-widest text-red-300">SYSTEM STATUS</p>
+              <div className="space-y-3">
+                {[
+                  { label: 'Emergency Network', status: 'OPERATIONAL' },
+                  { label: 'AI Triage Engine', status: 'OPERATIONAL' },
+                  { label: 'Alert Broadcasting', status: 'OPERATIONAL' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between">
+                    <span className="text-sm text-white/65">{item.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-ping-slow" style={{ boxShadow: '0 0 6px #2DC653' }} />
+                      <span className="mono text-[10px] tracking-wide text-green-400">{item.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="divider" />
+              <div>
+                <p className="mono text-[10px] uppercase tracking-widest mb-2 text-white/35">INCIDENTS MANAGED TODAY</p>
+                <p className="font-bold count-flip text-white leading-none" style={{ fontSize: 48 }}>{analytics?.todayIncidents || 0}</p>
+                <p className="text-xs mt-1 text-white/45">Real incidents from live analytics</p>
+              </div>
+            </div>
+          </aside>
+
+          <section className="animate-on-scroll space-y-6">
+            <div className="glass-strong w-full max-w-[760px] mx-auto overflow-hidden border border-red-500/20">
+              <div className="px-8 pt-8 pb-6 text-center space-y-4">
+                <div className="flex justify-center" style={{ filter: 'drop-shadow(0 0 16px rgba(230,57,70,0.5))' }}>
+                  <ShieldIcon size={56} />
+                </div>
+                <div className="space-y-3">
+                  <p className="mono text-[11px] text-white/40 tracking-[0.24em]">EMERGENCY RESPONSE PLATFORM</p>
+                  <h1 className="display-text">
+                    <span className="text-white">Crisis</span>
+                    <span className="text-red-500">Link</span>
+                  </h1>
+                  <p className="max-w-2xl mx-auto text-sm sm:text-base text-white/60">
+                    Live venue incident coordination for hospitality teams, with AI triage, instant guest SOS intake, and drill-safe response workflows.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  {activeIncidents.length > 0 ? (
+                    activeIncidents.slice(0, 4).map((incident) => (
+                      <span
+                        key={incident.id}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold border"
+                        style={{
+                          background: incident.severity === 'critical' ? 'rgba(230,57,70,0.18)' : 'rgba(255,255,255,0.06)',
+                          borderColor: incident.severity === 'critical' ? 'rgba(230,57,70,0.35)' : 'rgba(255,255,255,0.12)',
+                        }}
+                      >
+                        {String(incident.type || 'incident').toUpperCase()} · {incident.zone}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/75">
+                      SYSTEM ACTIVE · ALL CLEAR
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="divider" />
-          <div>
-            <p className="mono text-[10px] uppercase tracking-widest mb-2" style={{ color: 'rgba(232,234,240,0.35)' }}>Active Incidents Today</p>
-            <p className="font-bold count-flip" style={{ fontSize: 48, color: 'white', lineHeight: 1 }}>{activeCount}</p>
-            <p className="text-xs mt-1" style={{ color: 'rgba(232,234,240,0.4)' }}>across monitored zones</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Center — Login Card */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div
-          className="glass-strong w-full max-w-[420px] animate-slide-up space-y-0 overflow-hidden"
-          style={{ borderColor: 'rgba(230,57,70,0.20)' }}
-        >
-          {/* Card header */}
-          <div className="px-8 pt-8 pb-6 text-center space-y-3">
-            <div className="flex justify-center" style={{ filter: 'drop-shadow(0 0 16px rgba(230,57,70,0.5))' }}>
-              <ShieldIcon size={52} />
-            </div>
-            <div>
-              <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em' }}>
-                <span style={{ color: 'white' }}>Crisis</span>
-                <span style={{ color: '#E63946' }}>Link</span>
-              </h1>
-              <p className="mono" style={{ fontSize: 11, color: 'rgba(232,234,240,0.38)', letterSpacing: '0.06em' }}>
-                EMERGENCY RESPONSE PLATFORM
-              </p>
-            </div>
-          </div>
+              <div className="divider" />
 
-          <div className="divider" />
+              <div className="px-8 py-6">
+                <LoginForm email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
+              </div>
 
-          {/* Login form */}
-          <div className="px-8 py-6">
-            <LoginForm email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
-          </div>
-
-          {/* Demo accounts */}
-          <div className="px-8 pb-6 space-y-3">
-            <p className="mono text-center" style={{ fontSize: 10, color: 'rgba(232,234,240,0.30)', letterSpacing: '0.08em' }}>
-              DEMO ACCOUNTS — CLICK TO AUTO-FILL
-            </p>
-            <motion.div className="flex gap-2" variants={container} initial="hidden" animate="show">
-              {DEMO_ACCOUNTS.map(acc => (
-                <motion.div key={acc.email} variants={item}>
-                <DemoChip 
-                  key={acc.email} 
-                  account={acc} 
-                  onSelect={(e, p) => { setEmail(e); setPassword(p); }} 
-                />
+              <div className="px-8 pb-6 space-y-4">
+                <p className="mono text-center text-[10px] text-white/30 tracking-[0.20em]">DEMO ACCOUNTS — CLICK TO AUTO-FILL</p>
+                <motion.div className="flex gap-2" initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}>
+                  {DEMO_ACCOUNTS.map((account) => (
+                    <motion.div key={account.email} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="flex-1">
+                      <DemoChip account={account} onSelect={(nextEmail, nextPassword) => { setEmail(nextEmail); setPassword(nextPassword); }} />
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
-            </motion.div>
-            <div className="pt-2 flex justify-center">
-              <button
-                onClick={startDemo}
-                className="border border-emergency text-emergency hover:bg-emergency hover:text-white transition-all px-8 py-3 rounded-xl font-semibold"
-              >
-                ▶ Watch Live Demo
-              </button>
-            </div>
-          </div>
-
-          <div className="divider" />
-
-          {/* Guest SOS link */}
-          <GuestSOSStrip />
-        </div>
-      </div>
-
-      {/* Right decorative panel */}
-      <div className="hidden lg:flex flex-col justify-center px-12 w-80 xl:w-96 animate-fade-in delay-300">
-        <div className="glass scan-overlay p-6 space-y-4">
-          <p className="mono" style={{ fontSize: 10, color: 'rgba(232,234,240,0.35)', letterSpacing: '0.1em' }}>
-            RECENT ACTIVITY
-          </p>
-          <div className="space-y-3">
-            {recentIncidents.length === 0 && (
-              <p className="text-sm italic" style={{ color: 'rgba(232,234,240,0.50)' }}>No recent activity detected.</p>
-            )}
-            {recentIncidents.map((rawInc) => {
-              const item = formatIncident(rawInc);
-              return (
-                <div key={item.id} className="flex items-start gap-3">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                    style={{ background: item.color, border: `0.5px solid ${item.border}` }}
+                <div className="pt-2 flex justify-center">
+                  <button
+                    onClick={startDemo}
+                    className="border border-emergency text-emergency hover:bg-emergency hover:text-white transition-all px-8 py-3 rounded-xl font-semibold"
                   >
-                    {item.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm leading-snug" style={{ color: 'rgba(232,234,240,0.80)' }}>{item.text}</p>
-                    <p className="mono mt-0.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.35)' }}>{item.time}</p>
-                  </div>
+                    ▶ Watch Live Demo
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-          <div className="divider" />
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full animate-ping-slow" style={{ background: '#E63946' }} />
-            <p className="mono" style={{ fontSize: 10, color: 'rgba(232,234,240,0.40)', letterSpacing: '0.06em' }}>
-              LIVE MONITORING ACTIVE
-            </p>
-          </div>
+              </div>
+
+              <div className="divider" />
+              <GuestSOSStrip />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              {FEATURE_CARDS.map((card) => (
+                <article key={card.eyebrow} className="glass p-5 animate-on-scroll">
+                  <p className="mono text-[10px] tracking-[0.18em] text-red-300">{card.eyebrow}</p>
+                  <h2 className="text-white font-semibold text-xl mt-3">{card.title}</h2>
+                  <p className="text-sm text-white/60 mt-2 leading-relaxed">{card.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <aside className="animate-on-scroll hidden lg:block">
+            <div className="glass p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="mono text-[10px] text-white/35 tracking-[0.18em]">LIVE INCIDENT FEED</p>
+                <span className="mono text-[10px] text-red-300 tracking-[0.12em]">{activeIncidents.length} ACTIVE</span>
+              </div>
+              <div className="space-y-3">
+                {activeIncidents.length === 0 ? (
+                  <p className="text-sm italic text-white/50">No live incidents in the database right now.</p>
+                ) : (
+                  activeIncidents.slice(0, 5).map((incident) => (
+                    <div key={incident.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold text-white">{String(incident.type || 'incident').toUpperCase()}</span>
+                        <span className="text-[10px] uppercase tracking-wide text-white/40">{incident.zone}</span>
+                      </div>
+                      <p className="text-xs text-white/55 mt-1">{incident.description || 'No description provided.'}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="divider" />
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full animate-ping-slow" style={{ background: '#E63946' }} />
+                <p className="mono text-[10px] text-white/40 tracking-[0.08em]">SOCKET STREAM LISTENING FOR INCIDENT:NEW</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <div className="border-y border-white/8 bg-black/30 overflow-hidden">
+        <div className="animate-ticker whitespace-nowrap py-3">
+          {[...tickerItems, ...tickerItems].map((item, index) => (
+            <span key={`${item}-${index}`} className="mono text-[11px] tracking-[0.16em] text-white/55 mx-6">
+              {item}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -298,34 +379,19 @@ function HomeContent() {
           </div>
         </div>
       )}
-
-      {demoComplete && (
-        <div className="fixed inset-0 z-50 bg-green-900/70 flex items-center justify-center p-4">
-          <div className="bg-green-900/80 border border-green-400/40 rounded-2xl p-8 text-center max-w-xl w-full">
-            <p className="text-2xl font-bold text-green-100">✅ Demo Complete — CrisisLink resolved the incident in 23 seconds</p>
-            <button
-              onClick={() => setDemoComplete(false)}
-              className="mt-4 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
 
-/* ── Login Form ──────────────────────────────────────── */
 function LoginForm({ email, setEmail, password, setPassword }) {
-  const login   = useAuthStore(s => s.login);
-  const router  = useRouter();
-  const [showPw,   setShowPw]   = useState(false);
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const login = useAuthStore((s) => s.login);
+  const router = useRouter();
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (event) => {
+    event.preventDefault();
     setError('');
     setLoading(true);
     try {
@@ -347,52 +413,42 @@ function LoginForm({ email, setEmail, password, setPassword }) {
         </div>
       )}
       <div>
-        <label className="mono block mb-1.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.40)', letterSpacing: '0.08em' }}>
-          EMAIL ADDRESS
-        </label>
+        <label className="mono block mb-1.5 text-[10px] text-white/40 tracking-[0.16em]">EMAIL ADDRESS</label>
         <input
           id="input-email"
           className="input-glass"
           type="email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(event) => setEmail(event.target.value)}
           required
           autoComplete="email"
           placeholder="you@grandhotel.com"
         />
       </div>
       <div>
-        <label className="mono block mb-1.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.40)', letterSpacing: '0.08em' }}>
-          PASSWORD
-        </label>
+        <label className="mono block mb-1.5 text-[10px] text-white/40 tracking-[0.16em]">PASSWORD</label>
         <div className="relative">
           <input
             id="input-password"
             className="input-glass pr-12"
             type={showPw ? 'text' : 'password'}
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
             autoComplete="current-password"
             placeholder="••••••••"
           />
           <button
             type="button"
-            onClick={() => setShowPw(v => !v)}
+            onClick={() => setShowPw((current) => !current)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-lg"
-            style={{ color: 'rgba(232,234,240,0.35)', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ color: 'rgba(232,234,240,0.35)', background: 'none', border: 'none' }}
           >
             {showPw ? '🙈' : '👁️'}
           </button>
         </div>
       </div>
-      <button
-        id="btn-login"
-        type="submit"
-        disabled={loading}
-        className="btn-primary w-full"
-        style={{ height: 48, fontSize: 15 }}
-      >
+      <button id="btn-login" type="submit" disabled={loading} className="btn-primary w-full" style={{ height: 48, fontSize: 15 }}>
         {loading ? (
           <>
             <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -406,7 +462,6 @@ function LoginForm({ email, setEmail, password, setPassword }) {
   );
 }
 
-/* ── Demo Account Chip ───────────────────────────────── */
 function DemoChip({ account, onSelect }) {
   return (
     <button
@@ -415,28 +470,27 @@ function DemoChip({ account, onSelect }) {
       style={{
         background: account.color,
         border: `0.5px solid ${account.border}`,
-        cursor: 'pointer',
       }}
     >
-      <p className="mono font-bold" style={{ fontSize: 9, color: account.textColor, letterSpacing: '0.06em' }}>
+      <p className="mono font-bold text-[9px] tracking-[0.06em]" style={{ color: account.textColor }}>
         {account.role.toUpperCase()}
       </p>
-      <p className="truncate" style={{ fontSize: 10, color: 'rgba(232,234,240,0.55)', marginTop: 2 }}>
+      <p className="truncate text-[10px] text-white/55 mt-0.5">
         {account.email.split('@')[0]}
       </p>
     </button>
   );
 }
 
-/* ── Guest SOS Strip ─────────────────────────────────── */
 function GuestSOSStrip() {
   const router = useRouter();
+
   return (
     <button
       id="btn-sos-guest"
       onClick={() => router.push('/sos')}
       className="w-full py-4 flex items-center justify-center gap-3 transition-all hover:opacity-90"
-      style={{ background: 'rgba(230,57,70,0.10)', borderTop: '0.5px solid rgba(230,57,70,0.20)', cursor: 'pointer' }}
+      style={{ background: 'rgba(230,57,70,0.10)', borderTop: '0.5px solid rgba(230,57,70,0.20)' }}
     >
       <span className="w-2 h-2 rounded-full animate-ping-slow" style={{ background: '#E63946' }} />
       <span style={{ color: '#E63946', fontWeight: 600, fontSize: 14 }}>

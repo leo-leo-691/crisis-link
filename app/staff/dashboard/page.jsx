@@ -15,7 +15,7 @@ export default function StaffDashboard() {
 }
 
 function StaffContent() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
@@ -25,9 +25,10 @@ function StaffContent() {
   const [selectedZone, setSelectedZone] = useState(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'staff' && user.role !== 'admin') { router.push('/login'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const load = async () => {
     await fetchIncidents({});
@@ -43,7 +44,7 @@ function StaffContent() {
   }, [socket]);
 
   const mine = ownFilter
-    ? incidents.filter(i => i.assigned_to === user?.id)
+    ? incidents.filter(i => i.recommended_responder === user?.name)
     : incidents.filter(i => i.status !== 'resolved');
   const zoneIncidents = selectedZone ? incidents.filter(i => i.zone === selectedZone && i.status !== 'resolved') : [];
   const todayCount = incidents.filter((i) => {

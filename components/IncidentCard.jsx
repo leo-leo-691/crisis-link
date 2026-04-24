@@ -145,7 +145,7 @@ export default function IncidentCard({ incident, onClick, index = 0 }) {
       role="button"
       tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && onClick?.()}
-      className={`animate-slide-up cursor-pointer group ${isCritical ? 'emergency-flash' : ''}`}
+      className={`incident-card glass animate-slide-up cursor-pointer group ${isCritical ? 'emergency-flash' : ''}`}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}

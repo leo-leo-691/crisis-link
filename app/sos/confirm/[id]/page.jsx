@@ -22,7 +22,6 @@ export default function IncidentConfirmPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [showAssigned, setShowAssigned] = useState(false);
 
   const fetchIncident = async () => {
     if (!id) return;
@@ -49,12 +48,8 @@ export default function IncidentConfirmPage() {
     return () => clearInterval(interval);
   }, [id]);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => setShowAssigned(true), 3000);
-    return () => clearTimeout(timeout);
-  }, []);
-
   const stepIndex = useMemo(() => getStepIndex(incident?.status), [incident?.status]);
+  const responderName = incident?.recommended_responder || incident?.reporter_name || '';
 
   const copyId = async () => {
     try {
@@ -144,17 +139,17 @@ export default function IncidentConfirmPage() {
           Help is on the way. Stay where you are if safe to do so.
         </p>
 
-        {showAssigned && (
+        {responderName && (
           <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-blue-500/40 text-blue-100 flex items-center justify-center font-bold">
-              MR
+              {responderName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1">
-              <p className="font-semibold">Marcus Rivera</p>
-              <p className="text-xs text-white/60">Assigned Responder</p>
+              <p className="font-semibold">{responderName}</p>
+              <p className="text-xs text-white/60">{incident?.recommended_responder ? 'Assigned Responder' : 'Latest Recorded Contact'}</p>
             </div>
             <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/35">
-              En Route
+              {incident?.status === 'resolved' ? 'Resolved' : 'En Route'}
             </span>
           </div>
         )}

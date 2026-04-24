@@ -1,4 +1,5 @@
 const { NextResponse } = require('next/server');
+export const dynamic = 'force-dynamic';
 
 // POST /api/incidents/[id]/followup — generate AI guest follow-up message
 export async function POST(request, { params }) {
@@ -13,7 +14,7 @@ export async function POST(request, { params }) {
     const { id } = params;
     const { data: incident, error: incError } = await supabase
       .from('incidents')
-      .select('*')
+      .select('id, type, severity, status, zone, reporter_name, description, created_at, resolved_at')
       .eq('id', id)
       .maybeSingle();
     if (incError) throw incError;
@@ -29,9 +30,9 @@ export async function POST(request, { params }) {
     });
     if (timeError) throw timeError;
 
-    return NextResponse.json({ message, incident_id: id });
+    return NextResponse.json({ message, incident_id: id }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[POST /api/incidents/:id/followup]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
   }
 }

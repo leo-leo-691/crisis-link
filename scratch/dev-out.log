@@ -1,0 +1,815 @@
+
+> crisislink@1.0.0 dev
+> node server.js
+
+◇ injected env (6) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+✅ CrisisLink running on http://localhost:3000
+✅ Database ready
+   Demo login: admin@grandhotel.com / demo1234
+ ○ Compiling /api/health ...
+ ✓ Compiled /api/health in 619ms (141 modules)
+ GET /api/health 200 in 721ms
+ ○ Compiling /api/seed ...
+ ✓ Compiled /api/seed in 735ms (223 modules)
+ POST /api/seed 403 in 848ms
+ ✓ Compiled /api/analytics in 138ms (225 modules)
+ GET /api/analytics 200 in 300ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3.3s (1604 modules)
+ GET / 200 in 3464ms
+[WS] Connected: WLf7YZpDLyCGsoOGAAAB
+ GET /api/analytics 200 in 403ms
+ ✓ Compiled /api/incidents in 368ms (924 modules)
+ GET /api/analytics 200 in 540ms
+ GET /api/incidents?status=active&is_drill=0 200 in 623ms
+ GET /api/incidents?status=active&is_drill=0 200 in 1052ms
+ ✓ Compiled /api/auth/login in 251ms (926 modules)
+ POST /api/auth/login 200 in 560ms
+[WS] Connected: 8A75SD1ApvReDRJNAAAD
+ ○ Compiling /staff/dashboard ...
+ ✓ Compiled /staff/dashboard in 841ms (1663 modules)
+[WS] Disconnected: WLf7YZpDLyCGsoOGAAAB
+ ✓ Compiled /api/zones in 330ms (955 modules)
+ ✓ Compiled (957 modules)
+ GET /api/incidents? 200 in 854ms
+ GET /api/zones 200 in 958ms
+ GET /api/auth/me 200 in 959ms
+ GET /api/incidents? 200 in 149ms
+ GET /api/zones 200 in 115ms
+ GET /api/auth/me 200 in 150ms
+ GET /api/zones 200 in 67ms
+ GET /api/incidents? 200 in 144ms
+ GET /api/incidents? 200 in 119ms
+ GET /api/zones 200 in 189ms
+ POST /api/incidents 201 in 1231ms
+ GET /api/zones 200 in 132ms
+ GET /api/zones 200 in 125ms
+ GET /api/incidents? 200 in 92ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 8.99424327s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"8s"}]
+ GET /api/zones 200 in 149ms
+ GET /api/incidents? 200 in 581ms
+ GET /api/zones 200 in 138ms
+[WS] Disconnected: 8A75SD1ApvReDRJNAAAD
+ GET / 200 in 163ms
+[WS] Connected: WX8asz5xyFKXcM5DAAAF
+ GET /api/incidents?status=active&is_drill=0 200 in 545ms
+ GET /api/incidents?status=active&is_drill=0 200 in 560ms
+ GET /api/analytics 200 in 563ms
+ GET /api/analytics 200 in 554ms
+ POST /api/auth/login 200 in 217ms
+[WS] Connected: M2QkOpyApKRqzqwPAAAH
+[WS] Disconnected: WX8asz5xyFKXcM5DAAAF
+ GET /api/auth/me 200 in 88ms
+ GET /api/zones 200 in 148ms
+ GET /api/incidents? 200 in 149ms
+ GET /api/auth/me 200 in 86ms
+ GET /api/zones 200 in 153ms
+ GET /api/incidents? 200 in 153ms
+ GET /api/zones 200 in 151ms
+ GET /api/incidents? 200 in 152ms
+ GET /api/zones 200 in 144ms
+ GET /api/incidents? 200 in 145ms
+ GET /api/zones 200 in 127ms
+ GET /api/zones 200 in 127ms
+ POST /api/incidents 201 in 612ms
+ GET /api/incidents? 200 in 133ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 13.137115211s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"13s"}]
+ GET /api/zones 200 in 126ms
+ GET /api/incidents? 200 in 135ms
+ GET /api/zones 200 in 127ms
+[WS] Disconnected: M2QkOpyApKRqzqwPAAAH
+ ✓ Compiled in 2.1s (1679 modules)
+ ✓ Compiled in 560ms (1679 modules)
+ GET / 200 in 197ms
+[WS] Connected: rCKs9mOn8JsRgLOOAAAJ
+ GET /api/analytics 200 in 355ms
+ GET /api/incidents?status=active&is_drill=0 200 in 378ms
+ GET /api/incidents?status=active&is_drill=0 200 in 525ms
+ GET /api/analytics 200 in 588ms
+ POST /api/auth/login 200 in 124ms
+[WS] Connected: ocXswwTnWjBknKLHAAAL
+ POST /api/incidents 201 in 518ms
+[WS] Disconnected: rCKs9mOn8JsRgLOOAAAJ
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 29.425340935s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"29s"}]
+ GET /api/zones 200 in 80ms
+ GET /api/zones 200 in 73ms
+ GET /api/auth/me 200 in 227ms
+ GET /api/incidents? 200 in 229ms
+ GET /api/auth/me 200 in 73ms
+ GET /api/incidents? 200 in 87ms
+ GET /api/zones 200 in 143ms
+ GET /api/incidents? 200 in 85ms
+ GET /api/zones 200 in 93ms
+ GET /api/incidents? 200 in 99ms
+ GET /api/zones 200 in 68ms
+ GET /api/incidents? 200 in 96ms
+ GET /api/zones 200 in 66ms
+ GET /api/zones 200 in 68ms
+ ○ Compiling /staff/incident/[id] ...
+ ✓ Compiled /staff/incident/[id] in 863ms (1683 modules)
+[WS] Disconnected: ocXswwTnWjBknKLHAAAL
+ ✓ Compiled /api/seed in 214ms (967 modules)
+ POST /api/seed 403 in 261ms
+ GET /api/analytics 200 in 223ms
+ GET / 200 in 179ms
+[WS] Connected: HhD_bTvdNY6PtG1uAAAN
+ GET /api/incidents?status=active&is_drill=0 200 in 107ms
+ GET /api/analytics 200 in 178ms
+ GET /api/analytics 200 in 176ms
+ GET /api/incidents?status=active&is_drill=0 200 in 238ms
+ POST /api/auth/login 200 in 147ms
+[WS] Connected: qdUv7jBk_ywG4DjwAAAP
+ POST /api/incidents 201 in 740ms
+[WS] Disconnected: HhD_bTvdNY6PtG1uAAAN
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 9.037026036s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"9s"}]
+ GET /api/incidents? 200 in 222ms
+ GET /api/auth/me 200 in 225ms
+ GET /api/zones 200 in 269ms
+ GET /api/auth/me 200 in 99ms
+ GET /api/incidents? 200 in 104ms
+ GET /api/zones 200 in 140ms
+ GET /api/incidents? 200 in 99ms
+ GET /api/zones 200 in 93ms
+ GET /api/incidents? 200 in 133ms
+ GET /api/zones 200 in 97ms
+ GET /api/zones 200 in 75ms
+ GET /api/incidents? 200 in 138ms
+ GET /api/zones 200 in 84ms
+ GET /api/zones 200 in 86ms
+ GET /api/auth/me 200 in 89ms
+ ✓ Compiled /api/incidents/[id] in 348ms (969 modules)
+ GET /api/auth/me 200 in 653ms
+ GET /api/incidents/INC-20260424-6901 200 in 1059ms
+[WS] qdUv7jBk_ywG4DjwAAAP joined INC-20260424-6901
+ GET /api/incidents/INC-20260424-6901 200 in 165ms
+[WS] qdUv7jBk_ywG4DjwAAAP joined INC-20260424-6901
+ ✓ Compiled /api/incidents/[id]/status in 290ms (971 modules)
+ PATCH /api/incidents/INC-20260424-6901/status 200 in 953ms
+ GET /api/incidents/INC-20260424-6901 200 in 148ms
+ PATCH /api/incidents/INC-20260424-6901/status 200 in 316ms
+ GET /api/incidents/INC-20260424-6901 200 in 162ms
+ ✓ Compiled /api/incidents/[id]/tasks/[taskId] in 317ms (973 modules)
+ PATCH /api/incidents/INC-20260424-6901/tasks/178 200 in 941ms
+ GET /api/incidents/INC-20260424-6901 200 in 136ms
+ ✓ Compiled /api/incidents/[id]/messages in 251ms (975 modules)
+ POST /api/incidents/INC-20260424-6901/messages 201 in 705ms
+ GET /api/incidents/INC-20260424-6901 200 in 139ms
+ PATCH /api/incidents/INC-20260424-6901/status 200 in 360ms
+ GET /api/incidents/INC-20260424-6901 200 in 144ms
+ PATCH /api/incidents/INC-20260424-6901/status 200 in 346ms
+ GET /api/incidents/INC-20260424-6901 200 in 469ms
+ GET /api/incidents/INC-20260424-6901 200 in 157ms
+ GET /api/analytics 200 in 95ms
+[WS] Disconnected: qdUv7jBk_ywG4DjwAAAP
+ POST /api/auth/login 200 in 122ms
+ GET /staff/dashboard 200 in 93ms
+ GET /api/zones 200 in 142ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 858ms (1699 modules)
+ GET /api/auth/me 200 in 1021ms
+[WS] Connected: 4M-WnN2VMMWNhKhcAAAR
+[WS] Connected: S1pE_EEUw4fqu9lFAAAT
+ GET /api/zones 200 in 978ms
+ GET /api/auth/me 200 in 97ms
+ GET /api/incidents? 200 in 122ms
+ GET /api/zones 200 in 95ms
+[WS] Disconnected: 4M-WnN2VMMWNhKhcAAAR
+[WS] Disconnected: S1pE_EEUw4fqu9lFAAAT
+ POST /api/auth/login 200 in 375ms
+ GET /staff/dashboard 200 in 127ms
+ GET /api/zones 200 in 144ms
+ GET /api/auth/me 200 in 240ms
+ GET /api/zones 200 in 136ms
+[WS] Connected: F5taO7j2hHY71bM9AAAV
+ GET /api/auth/me 200 in 157ms
+[WS] Disconnected: F5taO7j2hHY71bM9AAAV
+ ✓ Compiled in 1243ms (1543 modules)
+ ✓ Compiled in 365ms (734 modules)
+ ✓ Compiled in 299ms (734 modules)
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 529ms (957 modules)
+ POST /api/auth/login 200 in 1158ms
+ GET /staff/dashboard 200 in 144ms
+ ✓ Compiled /api/auth/me in 224ms (959 modules)
+ ✓ Compiled (961 modules)
+ GET /api/auth/me 200 in 665ms
+[WS] Connected: rNXdtvzk69oZZ3o2AAAX
+[WS] Connected: PyBDvYetxbTXEubJAAAZ
+ GET /api/auth/me 200 in 99ms
+ ✓ Compiled /api/incidents in 254ms (967 modules)
+ GET /api/zones 200 in 1007ms
+ GET /api/incidents? 200 in 383ms
+ GET /api/zones 200 in 81ms
+ GET /api/incidents? 200 in 91ms
+ GET /api/zones 200 in 83ms
+ GET /api/zones 200 in 97ms
+[WS] Disconnected: rNXdtvzk69oZZ3o2AAAX
+[WS] Disconnected: PyBDvYetxbTXEubJAAAZ
+ ✓ Compiled /api/seed in 260ms (969 modules)
+ POST /api/seed 403 in 296ms
+ ✓ Compiled /api/analytics in 184ms (971 modules)
+ GET /api/analytics 200 in 430ms
+ GET / 200 in 137ms
+[WS] Connected: cxf9waTXIqYBt2_sAAAb
+ GET /api/analytics 200 in 134ms
+ GET /api/analytics 200 in 268ms
+ GET /api/incidents?status=active&is_drill=0 200 in 444ms
+ GET /api/incidents?status=active&is_drill=0 200 in 472ms
+ POST /api/auth/login 200 in 161ms
+[WS] Connected: 0s04K0qMXxCZnTcDAAAd
+ POST /api/incidents 201 in 473ms
+[WS] Disconnected: cxf9waTXIqYBt2_sAAAb
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 24.483470593s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"24s"}]
+ GET /api/zones 200 in 85ms
+ GET /api/zones 200 in 102ms
+ GET /api/auth/me 200 in 277ms
+ GET /api/auth/me 200 in 263ms
+ GET /api/incidents? 200 in 543ms
+ GET /api/zones 200 in 86ms
+ GET /api/incidents? 200 in 107ms
+ GET /api/zones 200 in 78ms
+ GET /api/incidents? 200 in 88ms
+ GET /api/zones 200 in 92ms
+ GET /api/incidents? 200 in 99ms
+ GET /api/zones 200 in 111ms
+ GET /api/incidents? 200 in 136ms
+ GET /api/zones 200 in 90ms
+ ✓ Compiled /api/incidents/[id] in 259ms (973 modules)
+ GET /api/auth/me 200 in 576ms
+ GET /api/incidents/INC-20260424-6255 200 in 664ms
+[WS] 0s04K0qMXxCZnTcDAAAd joined INC-20260424-6255
+ GET /api/auth/me 200 in 114ms
+ GET /api/incidents/INC-20260424-6255 200 in 153ms
+[WS] 0s04K0qMXxCZnTcDAAAd joined INC-20260424-6255
+ ✓ Compiled /api/incidents/[id]/status in 250ms (975 modules)
+ PATCH /api/incidents/INC-20260424-6255/status 200 in 560ms
+ GET /api/incidents/INC-20260424-6255 200 in 150ms
+ PATCH /api/incidents/INC-20260424-6255/status 200 in 269ms
+ GET /api/incidents/INC-20260424-6255 200 in 130ms
+ ✓ Compiled /api/incidents/[id]/tasks/[taskId] in 179ms (977 modules)
+ PATCH /api/incidents/INC-20260424-6255/tasks/183 200 in 428ms
+ GET /api/incidents/INC-20260424-6255 200 in 150ms
+ ✓ Compiled /api/incidents/[id]/messages in 193ms (979 modules)
+ POST /api/incidents/INC-20260424-6255/messages 201 in 375ms
+ GET /api/incidents/INC-20260424-6255 200 in 162ms
+ PATCH /api/incidents/INC-20260424-6255/status 200 in 298ms
+ GET /api/incidents/INC-20260424-6255 200 in 149ms
+ PATCH /api/incidents/INC-20260424-6255/status 200 in 310ms
+ GET /api/incidents/INC-20260424-6255 200 in 243ms
+ GET /api/incidents/INC-20260424-6255 200 in 135ms
+ GET /api/analytics 200 in 86ms
+[WS] Disconnected: 0s04K0qMXxCZnTcDAAAd
+ POST /api/auth/login 200 in 131ms
+ GET /staff/dashboard 200 in 105ms
+ GET /api/auth/me 200 in 158ms
+ GET /api/zones 200 in 159ms
+[WS] Connected: o3GhfHfC56XjBQEbAAAf
+[WS] Connected: bX0H6cgYzds5w_1vAAAh
+ GET /api/auth/me 200 in 145ms
+ GET /api/incidents? 200 in 138ms
+ GET /api/zones 200 in 211ms
+ GET /api/zones 200 in 72ms
+ GET /api/incidents? 200 in 140ms
+ GET /api/zones 200 in 114ms
+ ○ Compiling /sos ...
+ ✓ Compiled /sos in 893ms (1725 modules)
+ GET /sos 200 in 1114ms
+ ✓ Compiled in 318ms (739 modules)
+ POST /api/incidents 201 in 400ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 2.354304007s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"2s"}]
+ ○ Compiling /sos/confirm/[id] ...
+ ✓ Compiled /sos/confirm/[id] in 563ms (1717 modules)
+ GET /api/incidents/INC-20260424-1558 200 in 236ms
+[WS] Connected: oWK6-IuJpoSAE2YkAAAj
+[WS] Connected: fvairhyTjsDOGEyAAAAl
+ GET /api/auth/me 200 in 82ms
+ GET /api/incidents/INC-20260424-1558 200 in 151ms
+ GET /api/auth/me 200 in 77ms
+[WS] fvairhyTjsDOGEyAAAAl joined INC-20260424-1558
+ GET /api/incidents/INC-20260424-1558 200 in 454ms
+ GET /api/incidents/INC-20260424-1558 200 in 146ms
+[WS] fvairhyTjsDOGEyAAAAl joined INC-20260424-1558
+ PATCH /api/incidents/INC-20260424-1558/status 200 in 346ms
+ GET /api/incidents/INC-20260424-1558 200 in 167ms
+ GET /api/incidents/INC-20260424-1558 200 in 463ms
+ PATCH /api/incidents/INC-20260424-1558/status 200 in 277ms
+ GET /api/incidents/INC-20260424-1558 200 in 132ms
+ GET /api/incidents/INC-20260424-1558 200 in 142ms
+ ✓ Compiled /api/incidents/[id]/tasks in 410ms (992 modules)
+ POST /api/incidents/INC-20260424-1558/tasks 201 in 985ms
+ GET /api/incidents/INC-20260424-1558 200 in 242ms
+ GET /api/incidents/INC-20260424-1558 200 in 219ms
+ POST /api/incidents/INC-20260424-1558/messages 201 in 139ms
+ GET /api/incidents/INC-20260424-1558 200 in 152ms
+ PATCH /api/incidents/INC-20260424-1558/status 200 in 276ms
+ PATCH /api/incidents/INC-20260424-1558/status 200 in 355ms
+ GET /api/incidents/INC-20260424-1558 200 in 251ms
+ GET /api/incidents/INC-20260424-1558 200 in 156ms
+ GET /api/incidents/INC-20260424-1558 200 in 137ms
+ POST /api/auth/login 200 in 143ms
+ ○ Compiling /admin/dashboard ...
+ ✓ Compiled /admin/dashboard in 680ms (1727 modules)
+ GET /admin/dashboard 200 in 815ms
+ GET /api/incidents? 200 in 119ms
+ GET /api/incidents? 200 in 85ms
+ GET /api/auth/me 200 in 259ms
+ GET /api/analytics 200 in 265ms
+ GET /api/incidents/INC-20260424-1558 200 in 195ms
+ GET /api/auth/me 200 in 133ms
+[WS] Connected: gCt5KT9aZW7O3F3jAAAo
+[WS] Connected: HPDvW66GzgDIL2kxAAAp
+ GET /api/analytics 200 in 74ms
+ ✓ Compiled /api/broadcast in 343ms (999 modules)
+ POST /api/broadcast 201 in 474ms
+ ○ Compiling /admin/analytics ...
+ ✓ Compiled /admin/analytics in 4.6s (2716 modules)
+[WS] Disconnected: HPDvW66GzgDIL2kxAAAp
+[WS] Disconnected: gCt5KT9aZW7O3F3jAAAo
+ GET /admin/analytics 200 in 5009ms
+ GET /api/incidents/INC-20260424-1558 200 in 1652ms
+ GET /api/auth/me 200 in 872ms
+[WS] Connected: 7SilyqY3CGMNFnJaAAAr
+[WS] Connected: HufqJQqCPnMXYRaqAAAt
+ GET /api/auth/me 200 in 255ms
+ GET /api/analytics 200 in 231ms
+ GET /api/analytics 200 in 132ms
+ ○ Compiling /qr ...
+ ✓ Compiled /qr in 1782ms (2736 modules)
+[WS] Disconnected: HufqJQqCPnMXYRaqAAAt
+[WS] Disconnected: 7SilyqY3CGMNFnJaAAAr
+ GET /qr 200 in 1944ms
+ GET /api/incidents/INC-20260424-1558 200 in 1329ms
+ GET /api/auth/me 200 in 269ms
+[WS] Connected: jPKOzi2zt25xLVRUAAAv
+[WS] Connected: bQQB4TJaOPoYN4ThAAAx
+ GET /api/auth/me 200 in 127ms
+ GET /admin/dashboard 200 in 110ms
+ GET /api/auth/me 200 in 73ms
+ GET /api/incidents? 200 in 133ms
+ GET /api/auth/me 200 in 86ms
+[WS] Connected: rPJPtACFbblwQiUAAAA0
+[WS] Connected: yfYm0tXei7KEG-OkAAA1
+ GET /api/analytics 200 in 105ms
+ GET /api/incidents? 200 in 169ms
+ GET /api/analytics 200 in 49ms
+[WS] Disconnected: rPJPtACFbblwQiUAAAA0
+[WS] Disconnected: yfYm0tXei7KEG-OkAAA1
+[WS] Disconnected: jPKOzi2zt25xLVRUAAAv
+[WS] Disconnected: bQQB4TJaOPoYN4ThAAAx
+[WS] Disconnected: fvairhyTjsDOGEyAAAAl
+[WS] Disconnected: bX0H6cgYzds5w_1vAAAh
+[WS] Disconnected: o3GhfHfC56XjBQEbAAAf
+[WS] Disconnected: oWK6-IuJpoSAE2YkAAAj
+ ✓ Compiled in 1200ms (2723 modules)
+ ✓ Compiled /api/seed in 365ms (1480 modules)
+ POST /api/seed 403 in 433ms
+ GET /api/analytics 200 in 591ms
+ GET / 200 in 101ms
+[WS] Connected: -k10x-EK0dB4ezCIAAA3
+ GET /api/incidents?status=active&is_drill=0 200 in 180ms
+ GET /api/analytics 200 in 241ms
+ GET /api/incidents?status=active&is_drill=0 200 in 244ms
+ GET /api/analytics 200 in 425ms
+ POST /api/auth/login 200 in 196ms
+[WS] Connected: 4rd_94WNFx65R0OQAAA5
+ POST /api/incidents 201 in 710ms
+[WS] Disconnected: -k10x-EK0dB4ezCIAAA3
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 28.538127853s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"28s"}]
+ ✓ Compiled /api/zones in 367ms (1480 modules)
+ GET /api/auth/me 200 in 872ms
+ GET /api/zones 200 in 974ms
+ GET /api/incidents? 200 in 976ms
+ GET /api/auth/me 200 in 146ms
+ GET /api/zones 200 in 86ms
+ GET /api/incidents? 200 in 153ms
+ GET /api/zones 200 in 136ms
+ GET /api/incidents? 200 in 88ms
+ GET /api/incidents? 200 in 82ms
+ GET /api/zones 200 in 138ms
+ GET /api/incidents? 200 in 85ms
+ GET /api/zones 200 in 137ms
+ GET /api/zones 200 in 150ms
+ GET /api/zones 200 in 137ms
+ GET /api/auth/me 200 in 144ms
+ GET /api/incidents/INC-20260424-7849 200 in 251ms
+[WS] 4rd_94WNFx65R0OQAAA5 joined INC-20260424-7849
+ GET /api/auth/me 200 in 140ms
+ GET /api/incidents/INC-20260424-7849 200 in 154ms
+[WS] 4rd_94WNFx65R0OQAAA5 joined INC-20260424-7849
+ ✓ Compiled /api/incidents/[id]/status in 332ms (1482 modules)
+ PATCH /api/incidents/INC-20260424-7849/status 200 in 814ms
+ GET /api/incidents/INC-20260424-7849 200 in 153ms
+ PATCH /api/incidents/INC-20260424-7849/status 200 in 443ms
+ GET /api/incidents/INC-20260424-7849 200 in 136ms
+ ○ Compiling /api/incidents/[id]/tasks/[taskId] ...
+ ✓ Compiled /api/incidents/[id]/tasks/[taskId] in 525ms (986 modules)
+ PATCH /api/incidents/INC-20260424-7849/tasks/194 200 in 951ms
+ GET /api/incidents/INC-20260424-7849 200 in 142ms
+ ✓ Compiled /api/incidents/[id]/messages in 287ms (983 modules)
+ POST /api/incidents/INC-20260424-7849/messages 201 in 630ms
+ GET /api/incidents/INC-20260424-7849 200 in 144ms
+ PATCH /api/incidents/INC-20260424-7849/status 200 in 463ms
+ GET /api/incidents/INC-20260424-7849 200 in 145ms
+ PATCH /api/incidents/INC-20260424-7849/status 200 in 454ms
+ GET /api/incidents/INC-20260424-7849 200 in 509ms
+ GET /api/incidents/INC-20260424-7849 200 in 260ms
+ GET /api/analytics 200 in 142ms
+[WS] Disconnected: 4rd_94WNFx65R0OQAAA5
+ POST /api/auth/login 200 in 230ms
+ GET /staff/dashboard 200 in 200ms
+ GET /api/auth/me 200 in 119ms
+[WS] Connected: Zdqr0I5YeH9lglHKAAA7
+ GET /api/zones 200 in 182ms
+[WS] Connected: vw6c2PDhveSOnkjdAAA9
+ GET /api/auth/me 200 in 108ms
+ GET /api/incidents? 200 in 171ms
+ GET /api/zones 200 in 138ms
+ GET /api/incidents? 200 in 70ms
+ GET /api/zones 200 in 143ms
+ GET /api/zones 200 in 152ms
+ ○ Compiling /sos ...
+ ✓ Compiled /sos in 564ms (990 modules)
+ GET /sos 200 in 696ms
+ POST /api/incidents 201 in 521ms
+ GET /api/incidents? 200 in 233ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 6.31112748s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"6s"}]
+ GET /api/incidents/INC-20260424-5117 200 in 249ms
+ GET /api/zones 200 in 345ms
+ GET /api/incidents/INC-20260424-5117 200 in 443ms
+ GET /api/auth/me 200 in 154ms
+ GET /api/incidents/INC-20260424-5117 200 in 159ms
+[WS] vw6c2PDhveSOnkjdAAA9 joined INC-20260424-5117
+ GET /api/auth/me 200 in 134ms
+ GET /api/incidents/INC-20260424-5117 200 in 132ms
+[WS] vw6c2PDhveSOnkjdAAA9 joined INC-20260424-5117
+ PATCH /api/incidents/INC-20260424-5117/status 200 in 490ms
+ GET /api/incidents/INC-20260424-5117 200 in 148ms
+ GET /api/incidents/INC-20260424-5117 200 in 136ms
+ PATCH /api/incidents/INC-20260424-5117/status 200 in 547ms
+ GET /api/incidents/INC-20260424-5117 200 in 137ms
+ GET /api/incidents/INC-20260424-5117 200 in 160ms
+ ✓ Compiled /api/incidents/[id]/tasks in 332ms (992 modules)
+ POST /api/incidents/INC-20260424-5117/tasks 201 in 688ms
+ GET /api/incidents/INC-20260424-5117 200 in 187ms
+ GET /api/incidents/INC-20260424-5117 200 in 233ms
+ POST /api/incidents/INC-20260424-5117/messages 201 in 282ms
+ GET /api/incidents/INC-20260424-5117 200 in 162ms
+ PATCH /api/incidents/INC-20260424-5117/status 200 in 249ms
+ GET /api/incidents/INC-20260424-5117 200 in 157ms
+ PATCH /api/incidents/INC-20260424-5117/status 200 in 508ms
+ GET /api/incidents/INC-20260424-5117 200 in 87ms
+ GET /api/incidents/INC-20260424-5117 200 in 141ms
+ GET /api/incidents/INC-20260424-5117 200 in 245ms
+ GET /api/incidents/INC-20260424-5117 200 in 245ms
+ GET /api/incidents/INC-20260424-5117 200 in 243ms
+ GET /api/incidents/INC-20260424-5117 200 in 247ms
+ GET /api/incidents/INC-20260424-5117 200 in 181ms
+[WS] Disconnected: Zdqr0I5YeH9lglHKAAA7
+[WS] Disconnected: vw6c2PDhveSOnkjdAAA9
+ ✓ Compiled in 1843ms (2199 modules)
+ ✓ Compiled /api/seed in 225ms (962 modules)
+ POST /api/seed 403 in 309ms
+ ✓ Compiled /api/analytics in 237ms (964 modules)
+ GET /api/analytics 200 in 614ms
+ GET / 200 in 171ms
+[WS] Connected: L1xg2VrHxZKKDFwiAAA_
+ GET /api/analytics 200 in 176ms
+ ✓ Compiled /api/incidents in 276ms (969 modules)
+ GET /api/analytics 200 in 722ms
+ GET /api/incidents?status=active&is_drill=0 200 in 785ms
+ GET /api/incidents?status=active&is_drill=0 200 in 1065ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 582ms (971 modules)
+ POST /api/auth/login 200 in 1116ms
+[WS] Connected: WJZl4Ls3Bj7VPvdHAABB
+ POST /api/incidents 201 in 639ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 45.84154449s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"45s"}]
+[WS] Disconnected: L1xg2VrHxZKKDFwiAAA_
+ ✓ Compiled /api/auth/me in 259ms (973 modules)
+ ✓ Compiled (975 modules)
+ GET /api/auth/me 200 in 621ms
+ GET /api/zones 200 in 627ms
+ GET /api/incidents? 200 in 684ms
+ GET /api/auth/me 200 in 86ms
+ GET /api/zones 200 in 97ms
+ GET /api/incidents? 200 in 87ms
+ GET /api/zones 200 in 83ms
+ GET /api/incidents? 200 in 102ms
+ GET /api/zones 200 in 73ms
+ GET /api/incidents? 200 in 75ms
+ GET /api/zones 200 in 74ms
+ GET /api/zones 200 in 90ms
+ GET /api/incidents? 200 in 100ms
+ GET /api/zones 200 in 89ms
+ ✓ Compiled /api/incidents/[id] in 302ms (977 modules)
+ GET /api/auth/me 200 in 708ms
+ GET /api/auth/me 200 in 81ms
+ GET /api/incidents/INC-20260424-0710 200 in 896ms
+[WS] WJZl4Ls3Bj7VPvdHAABB joined INC-20260424-0710
+ GET /api/incidents/INC-20260424-0710 200 in 155ms
+[WS] WJZl4Ls3Bj7VPvdHAABB joined INC-20260424-0710
+ ✓ Compiled /api/incidents/[id]/status in 332ms (979 modules)
+ PATCH /api/incidents/INC-20260424-0710/status 200 in 622ms
+ GET /api/incidents/INC-20260424-0710 200 in 154ms
+ PATCH /api/incidents/INC-20260424-0710/status 200 in 231ms
+ GET /api/incidents/INC-20260424-0710 200 in 147ms
+ ✓ Compiled /api/incidents/[id]/tasks/[taskId] in 272ms (981 modules)
+ PATCH /api/incidents/INC-20260424-0710/tasks/205 200 in 462ms
+ GET /api/incidents/INC-20260424-0710 200 in 128ms
+ ✓ Compiled /api/incidents/[id]/messages in 300ms (983 modules)
+ POST /api/incidents/INC-20260424-0710/messages 201 in 505ms
+ GET /api/incidents/INC-20260424-0710 200 in 159ms
+ PATCH /api/incidents/INC-20260424-0710/status 200 in 264ms
+ GET /api/incidents/INC-20260424-0710 200 in 169ms
+ PATCH /api/incidents/INC-20260424-0710/status 200 in 407ms
+ GET /api/incidents/INC-20260424-0710 200 in 137ms
+ GET /api/incidents/INC-20260424-0710 200 in 146ms
+ GET /api/analytics 200 in 84ms
+[WS] Disconnected: WJZl4Ls3Bj7VPvdHAABB
+ POST /api/auth/login 200 in 146ms
+ GET /staff/dashboard 200 in 153ms
+ GET /api/zones 200 in 84ms
+ GET /api/auth/me 200 in 85ms
+[WS] Connected: OsZzrbrib3YmYDK0AABD
+[WS] Connected: P8OLEdCBvghDS2GVAABF
+ GET /api/zones 200 in 111ms
+ GET /api/incidents? 200 in 110ms
+ GET /api/auth/me 200 in 123ms
+ GET /api/zones 200 in 85ms
+ GET /api/incidents? 200 in 96ms
+ GET /api/zones 200 in 77ms
+ ✓ Compiled /sos in 335ms (990 modules)
+ GET /sos 200 in 452ms
+ POST /api/incidents 201 in 317ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 24.56596138s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"24s"}]
+ GET /api/incidents? 200 in 435ms
+ GET /api/incidents? 200 in 80ms
+ GET /api/zones 200 in 79ms
+ GET /api/zones 200 in 78ms
+ GET /api/incidents/INC-20260424-5301 200 in 409ms
+ GET /api/incidents/INC-20260424-5301 200 in 409ms
+ GET /api/auth/me 200 in 88ms
+ GET /api/auth/me 200 in 85ms
+ GET /api/incidents/INC-20260424-5301 200 in 197ms
+[WS] P8OLEdCBvghDS2GVAABF joined INC-20260424-5301
+ GET /api/incidents/INC-20260424-5301 200 in 96ms
+[WS] P8OLEdCBvghDS2GVAABF joined INC-20260424-5301
+ PATCH /api/incidents/INC-20260424-5301/status 200 in 269ms
+ GET /api/incidents/INC-20260424-5301 200 in 85ms
+ GET /api/incidents/INC-20260424-5301 200 in 94ms
+ PATCH /api/incidents/INC-20260424-5301/status 200 in 251ms
+ GET /api/incidents/INC-20260424-5301 200 in 95ms
+ GET /api/incidents/INC-20260424-5301 200 in 125ms
+ ✓ Compiled /api/incidents/[id]/tasks in 408ms (992 modules)
+ POST /api/incidents/INC-20260424-5301/tasks 201 in 691ms
+ GET /api/incidents/INC-20260424-5301 200 in 211ms
+ GET /api/incidents/INC-20260424-5301 200 in 270ms
+ POST /api/incidents/INC-20260424-5301/messages 201 in 150ms
+ GET /api/incidents/INC-20260424-5301 200 in 107ms
+ PATCH /api/incidents/INC-20260424-5301/status 200 in 286ms
+ PATCH /api/incidents/INC-20260424-5301/status 200 in 406ms
+ GET /api/incidents/INC-20260424-5301 200 in 151ms
+ GET /api/incidents/INC-20260424-5301 200 in 92ms
+ GET /api/incidents/INC-20260424-5301 200 in 107ms
+ POST /api/auth/login 200 in 136ms
+ ✓ Compiled /admin/dashboard in 427ms (997 modules)
+ GET /admin/dashboard 200 in 642ms
+ GET /api/incidents? 200 in 128ms
+ GET /api/auth/me 200 in 225ms
+ GET /api/incidents? 200 in 137ms
+ GET /api/auth/me 200 in 77ms
+[WS] Connected: c2L--DXQ07ma0BQ_AABI
+[WS] Connected: qJ2w9wK9CvU-eOheAABJ
+ GET /api/analytics 200 in 256ms
+ GET /api/analytics 200 in 133ms
+ GET /api/incidents/INC-20260424-5301 200 in 232ms
+ ✓ Compiled /api/broadcast in 331ms (999 modules)
+ POST /api/broadcast 201 in 462ms
+ ○ Compiling /admin/analytics ...
+ ✓ Compiled /admin/analytics in 1163ms (1493 modules)
+[WS] Disconnected: qJ2w9wK9CvU-eOheAABJ
+[WS] Disconnected: c2L--DXQ07ma0BQ_AABI
+ GET /admin/analytics 200 in 1520ms
+ GET /api/auth/me 200 in 95ms
+[WS] Connected: qPtvxDe4hd2aUss1AABL
+[WS] Connected: e5uEXWJDQuiHuJNTAABN
+ GET /api/auth/me 200 in 86ms
+ GET /api/analytics 200 in 97ms
+ GET /api/analytics 200 in 69ms
+ ✓ Compiled /qr in 408ms (1497 modules)
+[WS] Disconnected: e5uEXWJDQuiHuJNTAABN
+[WS] Disconnected: qPtvxDe4hd2aUss1AABL
+ GET /qr 200 in 570ms
+ GET /api/incidents/INC-20260424-5301 200 in 487ms
+ GET /api/auth/me 200 in 73ms
+[WS] Connected: -f_hKT8MlxQTKFz1AABP
+[WS] Connected: ISxmPEYIV23WyH9vAABR
+ GET /api/auth/me 200 in 71ms
+ GET /admin/dashboard 200 in 88ms
+ GET /api/incidents? 200 in 86ms
+ GET /api/auth/me 200 in 86ms
+ GET /api/incidents? 200 in 111ms
+ GET /api/auth/me 200 in 116ms
+[WS] Connected: wEnpTIPiXkI1bJ6mAABT
+ GET /api/analytics 200 in 145ms
+[WS] Connected: H2mgRprhCKKvmwnqAABV
+ GET /api/analytics 200 in 73ms
+[WS] Disconnected: H2mgRprhCKKvmwnqAABV
+[WS] Disconnected: wEnpTIPiXkI1bJ6mAABT
+[WS] Disconnected: P8OLEdCBvghDS2GVAABF
+[WS] Disconnected: OsZzrbrib3YmYDK0AABD
+[WS] Disconnected: ISxmPEYIV23WyH9vAABR
+[WS] Disconnected: -f_hKT8MlxQTKFz1AABP
+ POST /api/seed 403 in 22ms
+ GET /api/analytics 200 in 262ms
+ GET / 200 in 74ms
+[WS] Connected: okM9cUUFuxA5t2uzAABX
+ GET /api/analytics 200 in 195ms
+ GET /api/analytics 200 in 214ms
+ GET /api/incidents?status=active&is_drill=0 200 in 226ms
+ GET /api/incidents?status=active&is_drill=0 200 in 277ms
+ POST /api/auth/login 200 in 202ms
+[WS] Connected: lM1c6tPUR3tGxBf4AABZ
+ POST /api/incidents 201 in 738ms
+[WS] Disconnected: okM9cUUFuxA5t2uzAABX
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 2.110734433s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"2s"}]
+ GET /api/zones 200 in 155ms
+ GET /api/auth/me 200 in 180ms
+ GET /api/incidents? 200 in 237ms
+ GET /api/auth/me 200 in 100ms
+ GET /api/zones 200 in 147ms
+ GET /api/incidents? 200 in 156ms
+ GET /api/zones 200 in 134ms
+ GET /api/incidents? 200 in 156ms
+ GET /api/zones 200 in 146ms
+ GET /api/incidents? 200 in 152ms
+ GET /api/zones 200 in 141ms
+ GET /api/incidents? 200 in 153ms
+ GET /api/zones 200 in 143ms
+ GET /api/zones 200 in 142ms
+ GET /api/auth/me 200 in 145ms
+ GET /api/incidents/INC-20260424-6262 200 in 157ms
+[WS] lM1c6tPUR3tGxBf4AABZ joined INC-20260424-6262
+ GET /api/auth/me 200 in 144ms
+ GET /api/incidents/INC-20260424-6262 200 in 141ms
+[WS] lM1c6tPUR3tGxBf4AABZ joined INC-20260424-6262
+ PATCH /api/incidents/INC-20260424-6262/status 200 in 537ms
+ GET /api/incidents/INC-20260424-6262 200 in 138ms
+ PATCH /api/incidents/INC-20260424-6262/status 200 in 568ms
+ GET /api/incidents/INC-20260424-6262 200 in 177ms
+ PATCH /api/incidents/INC-20260424-6262/tasks/216 200 in 553ms
+ GET /api/incidents/INC-20260424-6262 200 in 168ms
+ POST /api/incidents/INC-20260424-6262/messages 201 in 272ms
+ GET /api/incidents/INC-20260424-6262 200 in 164ms
+ PATCH /api/incidents/INC-20260424-6262/status 200 in 508ms
+ GET /api/incidents/INC-20260424-6262 200 in 134ms
+ PATCH /api/incidents/INC-20260424-6262/status 200 in 746ms
+ GET /api/incidents/INC-20260424-6262 200 in 140ms
+ GET /api/incidents/INC-20260424-6262 200 in 161ms
+ GET /api/analytics 200 in 131ms
+[WS] Disconnected: lM1c6tPUR3tGxBf4AABZ
+ POST /api/auth/login 200 in 177ms
+ GET /staff/dashboard 200 in 73ms
+ GET /api/zones 200 in 156ms
+ GET /api/auth/me 200 in 153ms
+[WS] Connected: HZ_dqTTkUgQR9SqeAABb
+[WS] Connected: gZsYb1bTpDmBu5Z6AABd
+ GET /api/incidents? 200 in 121ms
+ GET /api/zones 200 in 165ms
+ GET /api/auth/me 200 in 174ms
+ GET /api/zones 200 in 128ms
+ GET /api/incidents? 200 in 155ms
+ GET /api/zones 200 in 131ms
+ GET /sos 200 in 64ms
+ POST /api/incidents 201 in 632ms
+ GET /api/incidents? 200 in 208ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+Please retry in 41.162641106s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"41s"}]
+ GET /api/incidents/INC-20260424-0485 200 in 220ms
+ GET /api/incidents/INC-20260424-0485 200 in 231ms
+ GET /api/zones 200 in 214ms
+ GET /api/incidents? 200 in 133ms
+ GET /api/zones 200 in 125ms
+ GET /api/incidents/INC-20260424-0485 200 in 141ms
+ GET /api/auth/me 200 in 149ms
+[WS] gZsYb1bTpDmBu5Z6AABd joined INC-20260424-0485
+ GET /api/auth/me 200 in 128ms
+ GET /api/incidents/INC-20260424-0485 200 in 141ms
+[WS] gZsYb1bTpDmBu5Z6AABd joined INC-20260424-0485
+ PATCH /api/incidents/INC-20260424-0485/status 200 in 483ms
+ GET /api/incidents/INC-20260424-0485 200 in 128ms
+ GET /api/incidents/INC-20260424-0485 200 in 195ms
+ PATCH /api/incidents/INC-20260424-0485/status 200 in 497ms
+ GET /api/incidents/INC-20260424-0485 200 in 147ms
+ GET /api/incidents/INC-20260424-0485 200 in 137ms
+ POST /api/incidents/INC-20260424-0485/tasks 201 in 258ms
+ POST /api/incidents/INC-20260424-0485/messages 201 in 165ms
+ GET /api/incidents/INC-20260424-0485 200 in 435ms
+ GET /api/incidents/INC-20260424-0485 200 in 95ms
+ GET /api/incidents/INC-20260424-0485 200 in 86ms
+ PATCH /api/incidents/INC-20260424-0485/status 200 in 321ms
+ PATCH /api/incidents/INC-20260424-0485/status 200 in 356ms
+ GET /api/incidents/INC-20260424-0485 200 in 97ms
+ GET /api/incidents/INC-20260424-0485 200 in 97ms
+ GET /api/incidents/INC-20260424-0485 200 in 194ms
+ GET /api/incidents/INC-20260424-0485 200 in 208ms
+ GET /api/incidents/INC-20260424-0485 200 in 249ms
+ GET /api/incidents/INC-20260424-0485 200 in 240ms
+ GET /api/incidents/INC-20260424-0485 200 in 206ms
+[WS] Disconnected: gZsYb1bTpDmBu5Z6AABd
+ GET /api/incidents/INC-20260424-0485 200 in 146ms
+[WS] Disconnected: HZ_dqTTkUgQR9SqeAABb
+ ✓ Compiled /api/health in 388ms (962 modules)
+ GET /api/health 200 in 458ms
+ ✓ Compiled /api/auth/login in 293ms (965 modules)
+ POST /api/auth/login 200 in 571ms
+ POST /api/auth/login 200 in 157ms
+ ✓ Compiled /api/auth/me in 310ms (967 modules)
+ GET /api/auth/me 200 in 431ms
+ ✓ Compiled /api/incidents in 250ms (973 modules)
+ GET /api/incidents 200 in 353ms
+ POST /api/incidents 201 in 779ms
+ GET /api/incidents/INC-20260424-1297 200 in 217ms
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 9.33693154s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.0-flash"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"9s"}]
+ ○ Compiling /api/incidents/[id]/status ...
+ ✓ Compiled /api/incidents/[id]/status in 561ms (975 modules)
+ PATCH /api/incidents/INC-20260424-1297/status 200 in 847ms
+ ✓ Compiled /api/incidents/[id]/tasks in 446ms (977 modules)
+ POST /api/incidents/INC-20260424-1297/tasks 201 in 662ms
+ ✓ Compiled /api/incidents/[id]/tasks/[taskId] in 203ms (979 modules)
+ PATCH /api/incidents/INC-20260424-1297/tasks/232 200 in 453ms
+ ✓ Compiled /api/incidents/[id]/messages in 242ms (981 modules)
+ POST /api/incidents/INC-20260424-1297/messages 201 in 403ms
+ ✓ Compiled /api/users in 325ms (983 modules)
+ GET /api/users 200 in 426ms
+ ✓ Compiled /api/zones in 254ms (985 modules)
+ GET /api/zones 200 in 367ms
+ ✓ Compiled /api/analytics in 308ms (987 modules)
+ GET /api/analytics 200 in 425ms
+ ✓ Compiled /api/broadcast in 305ms (989 modules)
+ POST /api/broadcast 201 in 412ms
+ ✓ Compiled /api/incidents/public in 300ms (991 modules)
+ GET /api/incidents/public 200 in 430ms
+ ✓ Compiled /api/demo/trigger in 357ms (993 modules)
+Gemini triage failed, using fallback: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash
+Please retry in 4.289086525s. [{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerMinutePerProjectPerModel-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}},{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_input_token_count","quotaId":"GenerateContentInputTokensPerModelPerMinute-FreeTier","quotaDimensions":{"model":"gemini-2.0-flash","location":"global"}}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"4s"}]
+ POST /api/demo/trigger 201 in 1025ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2s (2427 modules)
+ POST /api/auth/login 500 in 2239ms

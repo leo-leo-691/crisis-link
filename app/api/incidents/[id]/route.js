@@ -1,11 +1,43 @@
 const { NextResponse } = require('next/server');
-import { getUserFromRequest } from '@/lib/auth';
+const { getUserFromRequest } = require('@/lib/auth');
+
+export const dynamic = 'force-dynamic';
+
+const INCIDENT_COLUMNS = [
+  'id',
+  'type',
+  'severity',
+  'status',
+  'zone',
+  'room_number',
+  'reporter_name',
+  'reporter_type',
+  'description',
+  'description_translated',
+  'detected_language',
+  'ai_triage',
+  'ai_provider',
+  'evacuation_route',
+  'recommended_responder',
+  'debrief_report',
+  'resolved_at',
+  'is_drill',
+  'created_at',
+  'updated_at',
+].join(', ');
+
+function jsonNoStore(payload, init = {}) {
+  return NextResponse.json(payload, {
+    ...init,
+    headers: {
+      'Cache-Control': 'no-store',
+      ...(init.headers || {}),
+    },
+  });
+}
 
 export async function GET(request, { params }) {
   try {
-    const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const supabase = require('@/lib/supabase');
     const { id } = params;
 
@@ -15,36 +47,34 @@ export async function GET(request, { params }) {
       { data: messages, error: msgError },
       { data: timeline, error: timeError },
     ] = await Promise.all([
-      supabase.from('incidents').select('*').eq('id', id).maybeSingle(),
-      supabase.from('incident_tasks').select('*').eq('incident_id', id).order('id', { ascending: true }),
-      supabase.from('incident_messages').select('*').eq('incident_id', id).order('created_at', { ascending: true }),
-      supabase.from('incident_timeline').select('*').eq('incident_id', id).order('created_at', { ascending: true }),
+      supabase.from('incidents').select(INCIDENT_COLUMNS).eq('id', id).maybeSingle(),
+      supabase.from('incident_tasks').select('id, incident_id, title, priority, assigned_to, is_complete, created_at').eq('incident_id', id).order('id', { ascending: true }),
+      supabase.from('incident_messages').select('id, incident_id, user_id, sender_name, message, created_at').eq('incident_id', id).order('created_at', { ascending: true }),
+      supabase.from('incident_timeline').select('id, incident_id, actor, action, created_at').eq('incident_id', id).order('created_at', { ascending: true }),
     ]);
 
     if (incError) throw incError;
     if (tasksError) throw tasksError;
     if (msgError) throw msgError;
     if (timeError) throw timeError;
+    if (!incident) return jsonNoStore({ error: 'Not found' }, { status: 404 });
 
-    if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-    return NextResponse.json({ 
-      incident, 
-      tasks: tasks || [], 
-      messages: messages || [], 
-      timeline: timeline || [] 
+    return jsonNoStore({
+      incident,
+      tasks: tasks || [],
+      messages: messages || [],
+      timeline: timeline || [],
     });
   } catch (err) {
     console.error('[GET /api/incidents/:id]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return jsonNoStore({ error: err.message }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const { getUserFromRequest } = require('@/lib/auth');
     const user = getUserFromRequest(request);
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user || user.role !== 'admin') return jsonNoStore({ error: 'Forbidden' }, { status: 403 });
 
     const supabase = require('@/lib/supabase');
     const { id } = params;
@@ -66,8 +96,8 @@ export async function DELETE(request, { params }) {
     if (timeError) throw timeError;
     if (incError) throw incError;
 
-    return NextResponse.json({ message: 'Deleted' });
+    return jsonNoStore({ message: 'Deleted' });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return jsonNoStore({ error: err.message }, { status: 500 });
   }
 }

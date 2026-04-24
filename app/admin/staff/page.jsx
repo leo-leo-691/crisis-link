@@ -24,7 +24,7 @@ export default function AdminStaffPage() {
 }
 
 function AdminStaffContent() {
-  const { user } = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
 
@@ -38,6 +38,7 @@ function AdminStaffContent() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       router.push('/login');
       return;
@@ -45,7 +46,7 @@ function AdminStaffContent() {
     if (user.role !== 'admin') {
       router.push('/staff/dashboard');
     }
-  }, [user]);
+  }, [authLoading, user, router]);
 
   const authHeader = useMemo(
     () => {
@@ -59,15 +60,16 @@ function AdminStaffContent() {
     const res = await fetch('/api/users', { headers: authHeader });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || 'Failed to fetch users');
-    setUsers(payload.users || []);
+    setUsers(Array.isArray(payload) ? payload : []);
   };
 
   const loadZones = async () => {
     const res = await fetch('/api/zones', { headers: authHeader });
     const payload = await res.json();
     if (!res.ok) throw new Error(payload.error || 'Failed to fetch zones');
-    setZones(payload.zones || []);
-    if (!zoneForQr && payload.zones?.[0]?.name) setZoneForQr(payload.zones[0].name);
+    const nextZones = Array.isArray(payload) ? payload : [];
+    setZones(nextZones);
+    if (!zoneForQr && nextZones[0]?.name) setZoneForQr(nextZones[0].name);
   };
 
   const load = async () => {

@@ -13,12 +13,14 @@ export async function GET(request) {
       supabase
         .from('incidents')
         .select('id, type, zone, created_at')
+        .eq('is_drill', false)
         .neq('status', 'resolved')
         .order('created_at', { ascending: false })
         .limit(limit),
       supabase
         .from('incidents')
         .select('id', { count: 'exact', head: true })
+        .eq('is_drill', false)
         .neq('status', 'resolved'),
     ]);
 
@@ -28,6 +30,10 @@ export async function GET(request) {
     return NextResponse.json({
       incidents: incidents || [],
       totalActive: count || 0,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     });
   } catch (err) {
     console.error('[GET /api/incidents/public] Error:', err);

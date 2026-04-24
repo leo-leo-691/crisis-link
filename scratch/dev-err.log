@@ -1,0 +1,73 @@
+ ⨯ Error: Cannot find module './9276.js'
+Require stack:
+- E:\Google\Solution Challenge 2026\crisislink\.next\server\webpack-runtime.js
+- E:\Google\Solution Challenge 2026\crisislink\.next\server\app\api\demo\trigger\route.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\require.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\load-components.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\build\utils.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\dev\hot-middleware.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\router-server.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\start-server.js
+- E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\next.js
+- E:\Google\Solution Challenge 2026\crisislink\server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at __webpack_require__.f.require (E:\Google\Solution Challenge 2026\crisislink\.next\server\webpack-runtime.js:203:28)
+    at E:\Google\Solution Challenge 2026\crisislink\.next\server\webpack-runtime.js:116:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (E:\Google\Solution Challenge 2026\crisislink\.next\server\webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (E:\Google\Solution Challenge 2026\crisislink\.next\server\webpack-runtime.js:167:22)
+    at E:\Google\Solution Challenge 2026\crisislink\.next\server\app\api\auth\login\route.js:1:2732
+    at Object.<anonymous> (E:\Google\Solution Challenge 2026\crisislink\.next\server\app\api\auth\login\route.js:1:2790)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\require.js:109:84)
+    at E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\base-server.js:818:17)
+    at async E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async NextCustomServer.requestHandlerImpl [as requestHandler] (E:\Google\Solution Challenge 2026\crisislink\node_modules\next\dist\server\lib\router-server.js:383:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\.next\\server\\webpack-runtime.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\.next\\server\\app\\api\\demo\\trigger\\route.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\node_modules\\next\\dist\\server\\next.js',
+    'E:\\Google\\Solution Challenge 2026\\crisislink\\server.js'
+  ],
+  page: '/api/auth/login'
+}
+^C^C

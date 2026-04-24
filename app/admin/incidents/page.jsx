@@ -18,7 +18,7 @@ export default function IncidentsListPage() {
 }
 
 function IncidentsListContent() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const router = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const addToast = useUIStore(s => s.addToast);
@@ -31,9 +31,10 @@ function IncidentsListContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const load = async () => {
     setIsRefreshing(true);

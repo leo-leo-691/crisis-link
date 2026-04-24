@@ -25,11 +25,22 @@
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 .mono { font-family: 'JetBrains Mono', monospace !important; }
 
-/* Dark / Light body */
-html.dark body, body {
+body {
   background: #05070F;
   color: #E8EAF0;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.display-text {
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
 }
 
 /* ── Scrollbars ─────────────────────────────────────── */
@@ -170,6 +181,17 @@ html.dark body, body {
 .animate-bounce     { animation: bounce 1s infinite; }
 .animate-ticker     { animation: ticker-scroll 25s linear infinite; }
 .count-flip         { animation: count-flip 0.4s ease-out; }
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* Stagger delays */
 .delay-100 { animation-delay: 100ms; }
@@ -374,9 +396,33 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* ── Micro-interactions ──────────────────────────────── */
-button { transition: all 0.18s ease; }
-a      { transition: color 0.18s ease; }
+button, a, [role='button'] {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+button:hover, [role='button']:hover {
+  transform: translateY(-1px);
+}
+
+a {
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: white;
+}
+
 .card-hover:hover { border-color: rgba(255,255,255,0.20) !important; transform: translateY(-1px); }
+
+.incident-card,
+.map-pin {
+  will-change: transform;
+}
+
+.ai-panel-section {
+  will-change: opacity;
+}
 
 /* ── Topbar ──────────────────────────────────────────── */
 .topbar {
@@ -411,4 +457,3 @@ a      { transition: color 0.18s ease; }
 .hover\:bg-white\/5:hover  { background-color: rgba(255,255,255,0.05); }
 .hover\:bg-white\/8:hover  { background-color: rgba(255,255,255,0.08); }
 .hover\:bg-white\/12:hover { background-color: rgba(255,255,255,0.12); }
-

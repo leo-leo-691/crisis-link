@@ -42,7 +42,7 @@ function KpiCard({ label, value, suffix = '' }) {
 }
 
 function AnalyticsContent() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const router  = useRouter();
   const token = useAuthStore(s => s.token);
 
@@ -50,9 +50,10 @@ function AnalyticsContent() {
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   const load = async () => {
     setFetching(true);

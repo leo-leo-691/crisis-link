@@ -11,7 +11,7 @@ export default function AdminSettingsPage() {
 }
 
 function SettingsContent() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const logout  = useAuthStore(s => s.logout);
   const router  = useRouter();
   const drillMode    = useUIStore(s => s.drillMode);
@@ -32,9 +32,10 @@ function SettingsContent() {
   const [notifPermission, setNotifPermission] = useState('default');
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
-  }, [user]);
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -48,7 +49,7 @@ function SettingsContent() {
           headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
         });
         const payload = await res.json();
-        if (res.ok) setZones(payload.zones || []);
+        if (res.ok) setZones(Array.isArray(payload) ? payload : []);
       } catch (error) {
         console.error('[Settings] zone load error', error);
       }

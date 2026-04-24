@@ -196,7 +196,7 @@ function SOSForm() {
               </div>
               <div className="h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #E63946, #FF6B6B)' }} />
+                  style={{ transform: `scaleX(${progress / 100})`, transformOrigin: 'left', background: 'linear-gradient(90deg, #E63946, #FF6B6B)' }} />
               </div>
             </div>
           )}

@@ -1,13 +1,12 @@
 const { createServer } = require('http');
 const net = require('net');
-const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 const { setIO } = require('./lib/socket');
 require('dotenv').config();
 
 const dev  = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOSTNAME || '0.0.0.0';
+const hostname = process.env.APP_HOSTNAME || process.env.NEXT_HOST || (dev ? 'localhost' : '0.0.0.0');
 const startPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const app  = next({ dev, hostname, port: startPort });
 const handle = app.getRequestHandler();
@@ -28,8 +27,7 @@ function findFreePort(startAtPort) {
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     try {
-      const parsedUrl = parse(req.url, true);
-      handle(req, res, parsedUrl);
+      handle(req, res);
     } catch (err) {
       console.error('Request handler error:', req.url, err);
       res.statusCode = 500;
@@ -38,8 +36,10 @@ app.prepare().then(() => {
   });
 
   const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
-    transports: ['websocket'],
+    cors: { origin: '*' },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   // Register singleton so API routes can emit events

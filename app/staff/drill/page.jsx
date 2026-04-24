@@ -19,7 +19,7 @@ export default function StaffDrillPage() {
 }
 
 function StaffDrillContent() {
-  const { user } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const router = useRouter();
   const createIncident = useIncidentStore((s) => s.createIncident);
   const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
@@ -29,9 +29,10 @@ function StaffDrillContent() {
   const [drillEndTime, setDrillEndTime] = useState(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'staff' && user.role !== 'admin') { router.push('/login'); }
-  }, [user, router]);
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (!drillIncident?.id || drillIncident.status === 'resolved') return undefined;

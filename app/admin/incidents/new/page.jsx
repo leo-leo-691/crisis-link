@@ -18,7 +18,7 @@ export default function NewIncidentPage() {
 
 function NewIncidentForm() {
   const router   = useRouter();
-  const { user } = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const token    = useAuthStore(s => s.token);
   const addToast = useUIStore(s => s.addToast);
   const drillMode = useUIStore(s => s.drillMode);
@@ -31,10 +31,11 @@ function NewIncidentForm() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); return; }
     if (user) setForm(fp => ({ ...fp, reporter_name: user.name }));
-  }, [user]);
+  }, [authLoading, user, router]);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 

@@ -17,17 +17,21 @@ export async function POST(request) {
       .insert({ sender_id: user.id, message, target_role });
     if (error) throw error;
 
-    const io = getIO();
-    if (io) {
-      io.emit('broadcast', {
-        message,
-        senderName: user.name,
-        target_role,
-        timestamp: new Date().toISOString(),
-      });
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('broadcast', {
+          message,
+          senderName: user.name,
+          target_role,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (socketError) {
+      console.error('[POST /api/broadcast] Socket emit failed:', socketError);
     }
 
-    return NextResponse.json({ message: 'Broadcast sent' }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Broadcast sent' }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -1,46 +1,71 @@
 const { NextResponse } = require('next/server');
 
-// PATCH /api/incidents/[id]/tasks/[taskId] — toggle complete
+export const dynamic = 'force-dynamic';
+
+function jsonNoStore(payload, init = {}) {
+  return NextResponse.json(payload, {
+    ...init,
+    headers: {
+      'Cache-Control': 'no-store',
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function emitSafely(callback) {
+  try {
+    const { getIO } = require('@/lib/socket');
+    const io = getIO();
+    if (io) {
+      await callback(io);
+    }
+  } catch (socketError) {
+    console.error('[TASK TOGGLE API] Socket emit failed:', socketError);
+  }
+}
+
 export async function PATCH(request, { params }) {
   try {
     const supabase = require('@/lib/supabase');
-    const { getIO } = require('@/lib/socket');
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
+
     const { id, taskId } = params;
 
     const { data: existing, error: fetchError } = await supabase
       .from('incident_tasks')
-      .select('id, is_complete')
+      .select('id, title, is_complete')
       .eq('id', taskId)
       .eq('incident_id', id)
       .maybeSingle();
     if (fetchError) throw fetchError;
-    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!existing) return jsonNoStore({ error: 'Not found' }, { status: 404 });
 
     const { data: task, error: updateError } = await supabase
       .from('incident_tasks')
       .update({ is_complete: !existing.is_complete })
       .eq('id', taskId)
       .eq('incident_id', id)
-      .select('*')
+      .select('id, incident_id, title, priority, assigned_to, is_complete, created_at')
       .single();
     if (updateError) throw updateError;
 
-    const { data: updatedIncident, error: incError } = await supabase
-      .from('incidents')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-    if (incError) throw incError;
+    const { error: timeError } = await supabase.from('incident_timeline').insert({
+      incident_id: id,
+      actor: user?.name || 'System',
+      action: `${task.is_complete ? 'Completed' : 'Reopened'} task: "${existing.title}"`,
+      created_at: new Date().toISOString(),
+    });
+    if (timeError) throw timeError;
 
-    const io = getIO();
-    if (io) {
+    await emitSafely(async (io) => {
       io.to(id).emit('incident:task', { incidentId: id, task });
-      if (updatedIncident) io.emit('incident:updated', updatedIncident);
-    }
+    });
 
-    return NextResponse.json({ task });
+    return jsonNoStore(task);
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return jsonNoStore({ error: err.message }, { status: 500 });
   }
 }
 
@@ -49,13 +74,13 @@ export async function DELETE(request, { params }) {
     const supabase = require('@/lib/supabase');
     const { getUserFromRequest } = require('@/lib/auth');
     const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
     const { taskId } = params;
     const { error } = await supabase.from('incident_tasks').delete().eq('id', taskId);
     if (error) throw error;
-    return NextResponse.json({ message: 'Deleted' });
+    return jsonNoStore({ message: 'Deleted' });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return jsonNoStore({ error: err.message }, { status: 500 });
   }
 }

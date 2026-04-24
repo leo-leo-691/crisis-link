@@ -30,8 +30,6 @@ export default function TopBar() {
   const isReconnecting = useSocketStore(s => s.isReconnecting);
   const soundOn    = useUIStore(s => s.soundEnabled);
   const toggleSound = useUIStore(s => s.toggleSound);
-  const isDark     = useUIStore(s => s.isDarkMode);
-  const toggleDark = useUIStore(s => s.toggleDark);
   const pathname   = usePathname();
   const router = useRouter();
   const [showUser, setShowUser] = useState(false);
@@ -100,16 +98,6 @@ export default function TopBar() {
           title={soundOn ? 'Mute alerts' : 'Unmute alerts'}
         >
           {soundOn ? '🔊' : '🔇'}
-        </button>
-
-        {/* Dark mode */}
-        <button
-          onClick={toggleDark}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/5"
-          style={{ fontSize: 14, color: 'rgba(232,234,240,0.55)' }}
-          title="Toggle dark mode"
-        >
-          {isDark ? '🌙' : '☀️'}
         </button>
 
         {/* Divider */}

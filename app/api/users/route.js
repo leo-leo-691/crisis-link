@@ -15,7 +15,7 @@ export async function GET(request) {
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return NextResponse.json({ users: users || [] });
+    return NextResponse.json(users || []);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
