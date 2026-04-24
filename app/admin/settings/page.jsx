@@ -33,7 +33,7 @@ function SettingsContent() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
+    if (!user) { router.push('/'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
   }, [loading, user, router]);
 
@@ -168,7 +168,7 @@ function SettingsContent() {
             <InfoRow label="Role"       value={user?.role} />
             <InfoRow label="Department" value={user?.department} />
             <button
-              onClick={() => { logout(); router.push('/login'); }}
+              onClick={() => { logout(); router.push('/'); }}
               className="mt-2 px-4 py-2 text-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all"
             >
               Sign Out

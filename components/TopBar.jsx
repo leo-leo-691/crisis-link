@@ -134,7 +134,7 @@ export default function TopBar() {
               </div>
               <div style={{ height: 0.5, background: 'rgba(255,255,255,0.08)' }} />
               <button
-                onClick={() => { setShowUser(false); logout(); router.push('/login'); }}
+                onClick={() => { setShowUser(false); logout(); router.push('/'); }}
                 className="w-full text-left px-2 py-2 rounded-lg transition-all hover:bg-red-500/10"
                 style={{ fontSize: 13, color: 'rgba(232,234,240,0.55)', background: 'none', border: 'none', cursor: 'pointer' }}
               >

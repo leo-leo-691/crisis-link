@@ -96,7 +96,7 @@ function DashboardContent() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
+    if (!user) { router.push('/'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
   }, [loading, user, router]);
 

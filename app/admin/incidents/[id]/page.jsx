@@ -48,7 +48,7 @@ function IncidentDetail() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
+    if (!user) { router.push('/'); return; }
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
   }, [loading, user, router]);
 
@@ -94,8 +94,10 @@ function IncidentDetail() {
     try {
       const res = await fetch(`/api/incidents/${id}/debrief`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const d = await res.json();
+      if (!res.ok || d.error) throw new Error(d.error || 'Debrief generation failed');
+      if (typeof d.report !== 'string' || !d.report) throw new Error('Empty debrief response');
       setDebrief(d.report);
-    } catch (e) { addToast({ message: 'Debrief generation failed', type: 'error' }); }
+    } catch (e) { addToast({ message: e.message || 'Debrief generation failed', type: 'error' }); }
     finally { setLoadingAI(''); }
   };
 

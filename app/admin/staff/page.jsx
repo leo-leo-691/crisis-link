@@ -40,7 +40,7 @@ function AdminStaffContent() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     if (user.role !== 'admin') {

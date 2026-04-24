@@ -30,8 +30,8 @@ function StaffDrillContent() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/login'); }
+    if (!user) { router.push('/'); return; }
+    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -140,7 +140,7 @@ function StaffDrillContent() {
           <div className="glass p-5 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm text-white font-semibold">Selected: {selectedScenario.name}</p>
-              <p className="text-xs text-muted">Drill incidents are tagged with `is_drill = 1`.</p>
+
             </div>
             <button
               onClick={launchDrill}

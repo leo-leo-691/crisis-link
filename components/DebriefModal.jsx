@@ -3,7 +3,9 @@ import { useEffect, useRef } from 'react';
 
 // Syntax highlight markdown text for rendering in <pre> blocks
 function renderMarkdown(text) {
-  return text
+  // Guard: coerce to string so .replace() never throws on undefined/null
+  const safe = typeof text === 'string' ? text : String(text ?? '');
+  return safe
     .replace(/^## (.*)/gm, '<h2 class="text-base font-bold text-white mt-4 mb-2">$1</h2>')
     .replace(/^### (.*)/gm, '<h3 class="text-sm font-semibold text-white/90 mt-3 mb-1">$1</h3>')
     .replace(/^# (.*)/gm, '<h1 class="text-lg font-bold text-white mt-4 mb-2">$1</h1>')
@@ -58,10 +60,14 @@ export default function DebriefModal({ report, incidentId, onClose }) {
         </div>
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div
-            className="text-sm text-white/80 space-y-1 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(report) }}
-          />
+          {report ? (
+            <div
+              className="text-sm text-white/80 space-y-1 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(report) }}
+            />
+          ) : (
+            <p className="text-sm text-red-400">⚠️ Debrief generation failed. Please try again.</p>
+          )}
         </div>
       </div>
     </div>

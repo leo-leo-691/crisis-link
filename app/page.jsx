@@ -350,6 +350,7 @@ function HomeContent() {
 
               <div className="divider" />
               <GuestSOSStrip />
+              <GuestTracker />
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
@@ -530,5 +531,37 @@ function GuestSOSStrip() {
         Report Emergency without login →
       </span>
     </button>
+  );
+}
+
+function GuestTracker() {
+  const router = useRouter();
+  const [trackingId, setTrackingId] = useState('');
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!trackingId.trim()) return;
+    router.push(`/sos/confirm/${trackingId.trim()}`);
+  };
+
+  return (
+    <form onSubmit={submit} className="w-full py-4 px-6 flex flex-col sm:flex-row items-center gap-3 transition-all" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
+      <p className="mono text-[10px] text-white/50 tracking-[0.16em] sm:hidden w-full text-left mb-1">TRACK INCIDENT</p>
+      <input
+        type="text"
+        value={trackingId}
+        onChange={(e) => setTrackingId(e.target.value)}
+        placeholder="Enter Tracking ID..."
+        className="input-glass flex-1 !py-2 text-sm w-full"
+        style={{ height: 42 }}
+      />
+      <button
+        type="submit"
+        className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all hover:bg-white/10 w-full sm:w-auto"
+        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', height: 42 }}
+      >
+        Track Status
+      </button>
+    </form>
   );
 }

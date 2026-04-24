@@ -64,8 +64,10 @@ export default function CrisisBot({ incidentContext }) {
               }
             `}>
               {m.text}
-              {m.provider && m.provider !== 'fallback' && (
-                <span className="block mt-1 text-[10px] text-white/30">via {m.provider}</span>
+              {m.provider && (
+                <span className="block mt-1 text-[10px] text-white/30">
+                  via {m.provider === 'fallback' ? 'Smart Fallback' : m.provider}
+                </span>
               )}
             </div>
           </div>

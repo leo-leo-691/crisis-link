@@ -189,11 +189,12 @@ export default function Sidebar() {
             )}
             {!collapsed && (
               <button
-                onClick={() => { logout(); router.push('/login'); }}
-                className="text-xs transition-colors hover:text-red-400"
-                style={{ color: 'rgba(232,234,240,0.28)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }}
+                onClick={() => { logout(); router.push('/'); }}
+                className="text-xs transition-colors hover:text-red-500 font-medium flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10"
+                style={{ color: 'rgba(232,234,240,0.7)', border: 'none', cursor: 'pointer' }}
+                title="Logout"
               >
-                →
+                Logout <span>⎋</span>
               </button>
             )}
           </div>

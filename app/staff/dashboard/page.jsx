@@ -26,8 +26,8 @@ function StaffContent() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/login'); }
+    if (!user) { router.push('/'); return; }
+    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
   }, [loading, user, router]);
 
   const load = async () => {
@@ -97,7 +97,7 @@ function StaffContent() {
                 <p className="text-xs text-muted">Create a new incident directly from the staff panel</p>
               </div>
               <button
-                onClick={() => router.push('/admin/incidents/new')}
+                onClick={() => router.push('/staff/incidents/new')}
                 className="px-4 py-2 bg-emergency/80 hover:bg-emergency rounded-lg text-white font-bold text-sm transition-all hover:shadow-glow-red"
               >
                 + New Incident

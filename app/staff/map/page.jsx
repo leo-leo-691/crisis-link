@@ -24,11 +24,11 @@ function StaffMapContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     if (user.role !== 'staff' && user.role !== 'admin') {
-      router.push('/login');
+      router.push('/');
     }
   }, [loading, user, router]);
 

@@ -33,7 +33,7 @@ function NewIncidentForm() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'admin') { router.push('/staff/dashboard'); return; }
+    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); return; }
     if (user) setForm(fp => ({ ...fp, reporter_name: user.name }));
   }, [authLoading, user, router]);
 
@@ -60,7 +60,7 @@ function NewIncidentForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       addToast({ message: `Incident ${data.incident?.id} created`, type: 'success' });
-      router.push(`/admin/incidents/${data.incident?.id}`);
+      router.push(`/staff/incident/${data.incident?.id}`);
     } catch (err) {
       setError(err.message);
       addToast({ message: err.message, type: 'error' });

@@ -33,7 +33,7 @@ function IncidentsListContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'admin') { router.push('/staff/dashboard'); }
+    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
   }, [loading, user, router]);
 
   const load = async () => {
@@ -111,7 +111,7 @@ function IncidentsListContent() {
                   </svg>
                 </button>
                 <button
-                  onClick={() => router.push('/admin/incidents/new')}
+                  onClick={() => router.push('/staff/incidents/new')}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-500/20"
                   style={{ background: '#E63946', color: 'white' }}
                 >
@@ -218,7 +218,7 @@ function IncidentsListContent() {
                     key={inc.id} 
                     incident={inc} 
                     index={idx}
-                    onClick={() => router.push(`/admin/incidents/${inc.id}`)}
+                    onClick={() => router.push(`/staff/incident/${inc.id}`)}
                   />
                 ))}
               </div>
