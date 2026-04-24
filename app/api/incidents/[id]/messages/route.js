@@ -31,7 +31,7 @@ export async function GET(request, { params }) {
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = require('@/lib/supabase');
-    const { id } = params;
+    const { id } = await params;
     const { data: messages, error } = await supabase
       .from('incident_messages')
       .select('id, incident_id, user_id, sender_name, message, created_at')
@@ -49,7 +49,7 @@ export async function POST(request, { params }) {
     const supabase = require('@/lib/supabase');
     const { getUserFromRequest } = require('@/lib/auth');
 
-    const { id } = params;
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
     const { message, sender_name } = await request.json();

@@ -3,12 +3,13 @@ const net = require('net');
 const next = require('next');
 const { Server } = require('socket.io');
 const { setIO } = require('./lib/socket');
+
 require('dotenv').config();
 
-const dev  = process.env.NODE_ENV !== 'production';
+const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.APP_HOSTNAME || process.env.NEXT_HOST || (dev ? 'localhost' : '0.0.0.0');
-const startPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-const app  = next({ dev, hostname, port: startPort });
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev });
 const handle = app.getRequestHandler();
 
 function findFreePort(startAtPort) {
@@ -40,15 +41,14 @@ app.prepare().then(() => {
     transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000,
+    maxHttpBufferSize: 1e6,
   });
 
-  // Register singleton so API routes can emit events
   setIO(io);
 
   io.on('connection', (socket) => {
     console.log(`[WS] Connected: ${socket.id}`);
 
-    // Join an incident-specific room for targeted events
     socket.on('join:incident', (incidentId) => {
       socket.join(incidentId);
       console.log(`[WS] ${socket.id} joined ${incidentId}`);
@@ -64,10 +64,9 @@ app.prepare().then(() => {
   });
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('⚠️ Supabase credentials not found. Check .env file.');
+    console.warn('\u26A0\uFE0F Supabase credentials not found. Check .env file.');
   }
 
-  // Start background escalation service
   const { startEscalationService } = require('./lib/escalation');
   startEscalationService(io);
 
@@ -76,10 +75,10 @@ app.prepare().then(() => {
     process.exit(1);
   });
 
-  findFreePort(startPort).then((PORT) => {
-    httpServer.listen(PORT, () => {
-      console.log(`✅ CrisisLink running on http://localhost:${PORT}`);
-      console.log('✅ Database ready');
+  findFreePort(port).then((resolvedPort) => {
+    httpServer.listen(resolvedPort, hostname, () => {
+      console.log(`\u2705 CrisisLink running on http://localhost:${resolvedPort}`);
+      console.log('\u2705 Database ready');
       console.log('   Demo login: admin@grandhotel.com / demo1234');
     });
   });

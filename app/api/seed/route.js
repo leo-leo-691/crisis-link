@@ -3,27 +3,27 @@ import { getUserFromRequest } from '@/lib/auth';
 import { SOP_TASKS } from '@/lib/sopTasks';
 
 const DEFAULT_ZONES = [
-  ['Lobby', 1, 40, 380, 200, 100],
-  ['Front Desk', 1, 260, 380, 120, 100],
-  ['Restaurant', 1, 400, 380, 200, 100],
-  ['Bar & Lounge', 1, 620, 380, 170, 100],
-  ['Pool Deck', 1, 40, 260, 250, 100],
-  ['Gym & Spa', 1, 310, 260, 200, 100],
-  ['Grand Ballroom', 1, 530, 260, 260, 100],
-  ['Floor 1 East', 2, 40, 140, 180, 80],
-  ['Floor 1 West', 2, 240, 140, 180, 80],
-  ['Floor 2 East', 3, 440, 140, 180, 80],
-  ['Floor 2 West', 3, 640, 140, 180, 80],
-  ['Kitchen', 1, 400, 340, 100, 30],
-  ['Laundry', 0, 520, 340, 80, 30],
-  ['Server Room', 2, 40, 100, 60, 30],
+  ['Lobby', 1, 50, 380, 180, 100],
+  ['Front Desk', 1, 240, 380, 120, 100],
+  ['Restaurant', 1, 370, 380, 160, 100],
+  ['Kitchen', 1, 540, 380, 110, 100],
+  ['Bar/Lounge', 1, 660, 380, 120, 100],
+  ['Pool Area', 1, 50, 260, 200, 110],
+  ['Spa', 1, 260, 260, 140, 110],
+  ['Gym', 1, 410, 260, 130, 110],
+  ['Conference Room A', 1, 550, 260, 150, 110],
+  ['Parking', 0, 710, 260, 70, 110],
+  ['Floor 1', 1, 50, 160, 170, 90],
+  ['Floor 2', 2, 230, 160, 170, 90],
+  ['Floor 3', 3, 410, 160, 170, 90],
+  ['Floor 4', 4, 590, 160, 190, 90],
 ];
 
 const DEMO_USERS = [
   { email: 'admin@grandhotel.com', name: 'Crisis Admin', role: 'admin', zone_assignment: 'Lobby' },
   { email: 'manager@grandhotel.com', name: 'Duty Manager', role: 'staff', zone_assignment: 'Front Desk' },
   { email: 'staff@grandhotel.com', name: 'Response Staff', role: 'staff', zone_assignment: 'Restaurant' },
-  { email: 'security@grandhotel.com', name: 'Marcus Rivera', role: 'staff', zone_assignment: 'Server Room' },
+  { email: 'security@grandhotel.com', name: 'Marcus Rivera', role: 'staff', zone_assignment: 'Parking' },
   { email: 'frontdesk@grandhotel.com', name: 'Priya Sharma', role: 'staff', zone_assignment: 'Lobby' },
 ];
 
@@ -65,27 +65,42 @@ export async function POST(request) {
     const supabase = require('@/lib/supabase');
     const bcrypt = require('bcrypt');
 
-    // 1) Ensure zones baseline (14)
-    const { count: zoneCount, error: zoneCountError } = await supabase
-      .from('venue_zones')
-      .select('id', { count: 'exact', head: true });
-    if (zoneCountError) throw zoneCountError;
-    if ((zoneCount || 0) === 0) {
-      const { error: zonesInsertError } = await supabase.from('venue_zones').insert(
-        DEFAULT_ZONES.map((z) => ({
-          name: z[0],
-          floor: z[1],
-          map_x: z[2],
-          map_y: z[3],
-          map_width: z[4],
-          map_height: z[5],
-        }))
-      );
-      if (zonesInsertError) throw zonesInsertError;
+    // 1) Reset zones to the exact 14 production map zones
+    const { error: zoneDeleteError } = await supabase.from('venue_zones').delete().neq('id', 0);
+    if (zoneDeleteError) throw zoneDeleteError;
+
+    const { error: zonesInsertError } = await supabase.from('venue_zones').insert(
+      DEFAULT_ZONES.map((z) => ({
+        name: z[0],
+        floor: z[1],
+        map_x: z[2],
+        map_y: z[3],
+        map_width: z[4],
+        map_height: z[5],
+      }))
+    );
+    if (zonesInsertError) throw zonesInsertError;
+
+    // 2) Reset users to the exact 5 demo accounts expected by the app
+    const demoEmails = DEMO_USERS.map((entry) => entry.email.toLowerCase());
+    const { data: currentUsers, error: currentUsersError } = await supabase
+      .from('users')
+      .select('id, email');
+    if (currentUsersError) throw currentUsersError;
+
+    const staleUserIds = (currentUsers || [])
+      .filter((entry) => !demoEmails.includes((entry.email || '').toLowerCase()))
+      .map((entry) => entry.id)
+      .filter(Boolean);
+
+    if (staleUserIds.length) {
+      const { error: staleDeleteError } = await supabase
+        .from('users')
+        .delete()
+        .in('id', staleUserIds);
+      if (staleDeleteError) throw staleDeleteError;
     }
 
-    // 2) Ensure demo users baseline (5)
-    // We upsert by email to avoid breaking existing non-demo users (if any).
     const hash = await bcrypt.hash('demo1234', 10);
     for (const u of DEMO_USERS) {
       const { error } = await supabase
@@ -133,7 +148,7 @@ export async function POST(request) {
     const { data: inserted, error: insertError } = await supabase
       .from('incidents')
       .insert(toInsert)
-      .select('*');
+      .select('id, type, severity, status, zone, reporter_name, reporter_type, description, is_drill, created_at, updated_at');
     if (insertError) throw insertError;
 
     // Seed SOP tasks + timeline entries
@@ -167,4 +182,3 @@ export async function POST(request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-

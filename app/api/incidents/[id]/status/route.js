@@ -93,7 +93,7 @@ export async function PATCH(request, { params }) {
     const supabase = require('@/lib/supabase');
     const { getUserFromRequest } = require('@/lib/auth');
 
-    const { id } = params;
+    const { id } = await params;
     const { status } = await request.json();
     const user = getUserFromRequest(request);
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });

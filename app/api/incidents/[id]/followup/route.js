@@ -11,7 +11,7 @@ export async function POST(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { data: incident, error: incError } = await supabase
       .from('incidents')
       .select('id, type, severity, status, zone, reporter_name, description, created_at, resolved_at')

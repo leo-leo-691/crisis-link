@@ -39,7 +39,7 @@ function jsonNoStore(payload, init = {}) {
 export async function GET(request, { params }) {
   try {
     const supabase = require('@/lib/supabase');
-    const { id } = params;
+    const { id } = await params;
 
     const [
       { data: incident, error: incError },
@@ -59,9 +59,26 @@ export async function GET(request, { params }) {
     if (timeError) throw timeError;
     if (!incident) return jsonNoStore({ error: 'Not found' }, { status: 404 });
 
+    const assigneeIds = [...new Set((tasks || []).map((task) => task.assigned_to).filter(Boolean))];
+    let tasksWithAssignees = tasks || [];
+
+    if (assigneeIds.length) {
+      const { data: assignees, error: assigneeError } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', assigneeIds);
+      if (assigneeError) throw assigneeError;
+
+      const assigneeMap = new Map((assignees || []).map((person) => [person.id, person.name]));
+      tasksWithAssignees = (tasks || []).map((task) => ({
+        ...task,
+        assignee_name: task.assigned_to ? assigneeMap.get(task.assigned_to) || null : null,
+      }));
+    }
+
     return jsonNoStore({
       incident,
-      tasks: tasks || [],
+      tasks: tasksWithAssignees,
       messages: messages || [],
       timeline: timeline || [],
     });
@@ -77,7 +94,7 @@ export async function DELETE(request, { params }) {
     if (!user || user.role !== 'admin') return jsonNoStore({ error: 'Forbidden' }, { status: 403 });
 
     const supabase = require('@/lib/supabase');
-    const { id } = params;
+    const { id } = await params;
 
     const [
       { error: tasksError },

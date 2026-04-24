@@ -31,7 +31,7 @@ export async function PATCH(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id, taskId } = params;
+    const { id, taskId } = await params;
 
     const { data: existing, error: fetchError } = await supabase
       .from('incident_tasks')
@@ -76,7 +76,7 @@ export async function DELETE(request, { params }) {
     const user = getUserFromRequest(request);
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
-    const { taskId } = params;
+    const { taskId } = await params;
     const { error } = await supabase.from('incident_tasks').delete().eq('id', taskId);
     if (error) throw error;
     return jsonNoStore({ message: 'Deleted' });

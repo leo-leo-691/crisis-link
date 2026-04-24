@@ -338,7 +338,12 @@ function StaffIncidentDetailContent() {
                         disabled={togglingTasks[task.id]}
                         className="w-4 h-4 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      <span className={`text-sm flex-1 ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-sm block ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
+                        <span className="text-[11px] text-white/45">
+                          {task.assignee_name ? `Assigned to ${task.assignee_name}` : 'Unassigned'}
+                        </span>
+                      </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${priorityClass(task.priority)}`}>{task.priority || 'medium'}</span>
                     </label>
                   ))}

@@ -28,6 +28,19 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function clickWhenReady(selector, timeoutMs = 8000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const element = document.querySelector(selector);
+    if (element && !element.disabled) {
+      element.click();
+      return true;
+    }
+    await wait(200);
+  }
+  return false;
+}
+
 function setInputValue(element, value) {
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
   if (setter) setter.call(element, value);
@@ -72,7 +85,7 @@ export default function DemoAutopilot() {
       if (!current?.active || cancelled) return;
 
       if (pathname === '/staff/dashboard' && current.phase === 'created') {
-        await wait(2500);
+        await wait(3000);
         if (cancelled) return;
         updateRun({ phase: 'incident-page' });
         router.push(`/staff/incident/${current.incidentId}`);
@@ -82,58 +95,69 @@ export default function DemoAutopilot() {
       if (pathname !== `/staff/incident/${current.incidentId}`) return;
 
       if (current.phase === 'incident-page') {
-        await wait(1200);
-        document.querySelector('[data-action="acknowledge"]')?.click();
-        updateRun({ phase: 'acknowledged' });
+        const acknowledged = await clickWhenReady('[data-action="acknowledge"]');
+        if (acknowledged) {
+          updateRun({ phase: 'acknowledged' });
+        }
         return;
       }
 
       if (current.phase === 'acknowledged') {
-        await wait(1800);
-        document.querySelector('[data-action="start-response"]')?.click();
-        updateRun({ phase: 'responding' });
+        await wait(3000);
+        const started = await clickWhenReady('[data-action="start-response"]');
+        if (started) {
+          updateRun({ phase: 'responding' });
+        }
         return;
       }
 
       if (current.phase === 'responding') {
-        await wait(1800);
-        document.querySelector('[data-tab="tasks"]')?.click();
-        await wait(900);
-        document.querySelector('[data-task-checkbox="primary"]')?.click();
-        updateRun({ phase: 'task-complete' });
+        await wait(2000);
+        await clickWhenReady('[data-tab="tasks"]');
+        await wait(400);
+        const checked = await clickWhenReady('[data-task-checkbox="primary"]');
+        if (checked) {
+          updateRun({ phase: 'task-complete' });
+        }
         return;
       }
 
       if (current.phase === 'task-complete') {
-        await wait(1800);
-        document.querySelector('[data-tab="comms"]')?.click();
-        await wait(900);
+        await wait(2000);
+        await clickWhenReady('[data-tab="comms"]');
+        await wait(400);
         const input = document.querySelector('[data-chat-input="incident"]');
         if (input) {
-          setInputValue(input, 'Demo autopilot check-in: response team is on scene and patient care has started.');
+          setInputValue(input, 'Team on scene situation assessed');
         }
         await wait(400);
-        document.querySelector('[data-action="send-chat"]')?.click();
-        updateRun({ phase: 'message-sent' });
+        const sent = await clickWhenReady('[data-action="send-chat"]');
+        if (sent) {
+          updateRun({ phase: 'message-sent' });
+        }
         return;
       }
 
       if (current.phase === 'message-sent') {
-        await wait(1800);
-        document.querySelector('[data-action="contained"]')?.click();
-        updateRun({ phase: 'contained' });
+        await wait(3000);
+        const contained = await clickWhenReady('[data-action="contained"]');
+        if (contained) {
+          updateRun({ phase: 'contained' });
+        }
         return;
       }
 
       if (current.phase === 'contained') {
-        await wait(1800);
-        document.querySelector('[data-action="resolve"]')?.click();
-        updateRun({ phase: 'resolved' });
+        await wait(2000);
+        const resolved = await clickWhenReady('[data-action="resolve"]');
+        if (resolved) {
+          updateRun({ phase: 'resolved' });
+        }
         return;
       }
 
       if (current.phase === 'resolved') {
-        await wait(1200);
+        await wait(1000);
         completeDemo();
       }
     };
@@ -152,7 +176,9 @@ export default function DemoAutopilot() {
   return (
     <div className="fixed inset-0 z-[10000] bg-green-900/70 flex items-center justify-center p-4">
       <div className="bg-green-900/80 border border-green-400/40 rounded-2xl p-8 text-center max-w-xl w-full">
-        <p className="text-2xl font-bold text-green-100">✅ Demo Complete — CrisisLink resolved the incident in 23 seconds</p>
+        <p className="text-2xl font-bold text-green-100">
+          {'\u2705'} Demo Complete {'\u2014'} CrisisLink resolved the incident in 23 seconds
+        </p>
         <button
           onClick={() => {
             writeRun(null);

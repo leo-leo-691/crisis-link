@@ -7,7 +7,7 @@ export async function PATCH(request, { params }) {
     if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (authUser.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { id } = params;
+    const { id } = await params;
     const supabase = require('@/lib/supabase');
     const payload = await request.json();
 

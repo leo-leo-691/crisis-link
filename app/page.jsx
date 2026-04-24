@@ -95,7 +95,7 @@ function HomeContent() {
       try {
         const [analyticsRes, incidentsRes] = await Promise.all([
           fetch('/api/analytics', { cache: 'no-store' }),
-          fetch('/api/incidents?status=active&is_drill=0', { cache: 'no-store' }),
+          fetch('/api/incidents?status=active&is_drill=false&limit=3', { cache: 'no-store' }),
         ]);
 
         const analyticsPayload = await analyticsRes.json();
@@ -120,9 +120,9 @@ function HomeContent() {
 
       socketRef.on('incident:new', (incident) => {
         if (incident?.is_drill) return;
-        setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 6));
+        setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 3));
         if (incident?.created_at && isToday(incident.created_at)) {
-          setAnalytics((current) => current ? { ...current, todayIncidents: (current.todayIncidents || 0) + 1, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1 } : current);
+          setAnalytics((current) => current ? { ...current, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1, todayIncidents: (current.todayIncidents || 0) + 1 } : current);
         }
       });
 
@@ -143,6 +143,39 @@ function HomeContent() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    const nodes = document.querySelectorAll('.animate-on-scroll');
+    nodes.forEach((node) => observer.observe(node));
+
+    let frameId = null;
+    let lenis = null;
+
+    if (window.Lenis) {
+      lenis = new window.Lenis({ duration: 0.8, smooth: true });
+      const raf = (time) => {
+        lenis.raf(time);
+        frameId = window.requestAnimationFrame(raf);
+      };
+      frameId = window.requestAnimationFrame(raf);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (frameId) window.cancelAnimationFrame(frameId);
+      if (lenis) lenis.destroy();
+    };
+  }, []);
+
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const startDemo = async () => {
@@ -154,7 +187,7 @@ function HomeContent() {
         await wait(1000);
       }
 
-      const demoUser = await login('staff@grandhotel.com', 'demo1234');
+      await login('staff@grandhotel.com', 'demo1234');
       const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
       await wait(1200);
 
@@ -166,11 +199,11 @@ function HomeContent() {
         },
         body: JSON.stringify({
           type: 'medical',
-          zone: 'Lobby',
-          description: '[DRILL] Guest collapse at the main lobby desk. Demo autopilot scenario in progress.',
-          reporter_name: demoUser?.name || 'Demo Operator',
-          reporter_type: 'staff',
-          is_drill: 1,
+          zone: 'Restaurant',
+          description: 'Guest collapsed near table 12 unconscious',
+          reporter_name: 'Demo Guest',
+          reporter_type: 'guest',
+          is_drill: true,
         }),
       });
       const payload = await res.json();
@@ -244,9 +277,9 @@ function HomeContent() {
               </div>
               <div className="divider" />
               <div>
-                <p className="mono text-[10px] uppercase tracking-widest mb-2 text-white/35">INCIDENTS MANAGED TODAY</p>
-                <p className="font-bold count-flip text-white leading-none" style={{ fontSize: 48 }}>{analytics?.todayIncidents || 0}</p>
-                <p className="text-xs mt-1 text-white/45">Real incidents from live analytics</p>
+                <p className="mono text-[10px] uppercase tracking-widest mb-2 text-white/35">TOTAL INCIDENTS MANAGED</p>
+                <p className="font-bold count-flip text-white leading-none" style={{ fontSize: 48 }}>{analytics?.totalIncidents || 0}</p>
+                <p className="text-xs mt-1 text-white/45">Real incident total from live analytics</p>
               </div>
             </div>
           </aside>
@@ -270,7 +303,7 @@ function HomeContent() {
 
                 <div className="flex flex-wrap justify-center gap-2 pt-2">
                   {activeIncidents.length > 0 ? (
-                    activeIncidents.slice(0, 4).map((incident) => (
+                    activeIncidents.slice(0, 3).map((incident) => (
                       <span
                         key={incident.id}
                         className="px-3 py-1.5 rounded-full text-xs font-semibold border"
@@ -340,7 +373,7 @@ function HomeContent() {
                 {activeIncidents.length === 0 ? (
                   <p className="text-sm italic text-white/50">No live incidents in the database right now.</p>
                 ) : (
-                  activeIncidents.slice(0, 5).map((incident) => (
+                  activeIncidents.slice(0, 3).map((incident) => (
                     <div key={incident.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-semibold text-white">{String(incident.type || 'incident').toUpperCase()}</span>
@@ -374,8 +407,8 @@ function HomeContent() {
       {demoStarting && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
           <div className="glass-strong p-8 text-center border border-white/15 rounded-2xl min-w-[320px]">
-            <p className="text-2xl mb-2">🎬 Demo Starting...</p>
-            <p className="text-4xl font-bold text-emergency">{demoCountdown}</p>
+            <p className="text-2xl mb-2">{`\u{1F3AC} Demo Starting in ${demoCountdown}...`}</p>
+            <p className="text-sm text-white/60">Preparing live incident simulation</p>
           </div>
         </div>
       )}
