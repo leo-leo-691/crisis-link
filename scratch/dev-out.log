@@ -1,5 +1,0 @@
-◇ injected env (6) from .env // tip: ⌁ auth for agents [www.vestauth.com]
-✅ CrisisLink running on http://localhost:3000
-✅ Database ready
-   Demo login: admin@grandhotel.com / demo1234
- GET /api/health 200 in 875ms (next.js: 168ms, application-code: 707ms)

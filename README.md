@@ -5,7 +5,7 @@
 
 > **Google Solution Challenge 2026** · Addressing UN SDG 11 — Sustainable Cities and Communities
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live-Demo-FF4444?style=for-the-badge)](YOUR_LIVE_URL_HERE)
+[![Live Demo](https://img.shields.io/badge/🌐_Live-Demo-FF4444?style=for-the-badge)](https://crisislink-928472984789.us-central1.run.app)
 [![Video Demo](https://img.shields.io/badge/▶_Watch-Demo-FF0000?style=for-the-badge&logo=youtube)](YOUR_VIDEO_URL_HERE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)

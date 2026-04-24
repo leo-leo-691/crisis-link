@@ -9,7 +9,7 @@ require('dotenv').config();
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.APP_HOSTNAME || process.env.NEXT_HOST || (dev ? 'localhost' : '0.0.0.0');
 const port = parseInt(process.env.PORT || '3000', 10);
-const app = next({ dev });
+const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 function findFreePort(startAtPort) {
@@ -75,11 +75,20 @@ app.prepare().then(() => {
     process.exit(1);
   });
 
-  findFreePort(port).then((resolvedPort) => {
+  const startServer = (resolvedPort) => {
     httpServer.listen(resolvedPort, hostname, () => {
-      console.log(`\u2705 CrisisLink running on http://localhost:${resolvedPort}`);
+      console.log(`\u2705 CrisisLink running on http://${hostname}:${resolvedPort}`);
       console.log('\u2705 Database ready');
       console.log('   Demo login: admin@grandhotel.com / demo1234');
     });
-  });
+  };
+
+  if (dev) {
+    findFreePort(port).then(startServer);
+  } else {
+    startServer(port);
+  }
+}).catch((err) => {
+  console.error('Failed to prepare Next.js app:', err);
+  process.exit(1);
 });
