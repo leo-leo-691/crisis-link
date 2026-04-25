@@ -9,7 +9,7 @@
 [![Video Demo](https://img.shields.io/badge/▶_Watch-Demo-FF0000?style=for-the-badge&logo=youtube)](YOUR_VIDEO_URL_HERE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![Gemini AI](https://img.shields.io/badge/Gemini_3-Flash-4285F4?style=for-the-badge&logo=google)](https://aistudio.google.com)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3_Flash-Preview-4285F4?style=for-the-badge&logo=google)](https://aistudio.google.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=for-the-badge&logo=socket.io)](https://socket.io)
 [![Docker](https://img.shields.io/badge/Docker-Cloud_Run-2496ED?style=for-the-badge&logo=docker)](https://cloud.google.com/run)
@@ -67,6 +67,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | 📄 **AI Debrief Report** | Gemini-generated post-incident analysis triggered on incident resolution |
 | 📱 **PWA Offline Support** | Service worker via `next-pwa` — SOS continuity on unstable networks |
 | 🔁 **Offline Queue** | Incidents submitted offline sync automatically when connection restores |
+| 🔍 **Guest Tracker** | Guests can monitor their incident status in real-time using a unique Tracking ID |
 | 📲 **QR Code Access** | Per-zone QR codes pre-fill the SOS form — scan and report in one tap |
 | 🎬 **Demo Autopilot** | Press `D` on the landing page to watch a fully automated live demonstration |
 | 🛡️ **Smart Fallback** | Hybrid response system: switches to keyword-based SOPs if AI is unreachable |
@@ -132,7 +133,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 │  └──────────────┘  └─────────────┘  └───────────────┘  │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │         Google Gemini 2.0 Flash AI Engine        │   │
+│  │      Google Gemini 3 Flash Preview Engine        │   │
 │  │   Triage · SOP Generation · Debrief Workflows    │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -166,7 +167,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | **State** | Zustand | Lightweight client-side state management |
 | **Real-Time** | Socket.IO | WebSocket event bus for live updates |
 | **Database** | Supabase (Postgres) | Persistent cloud database |
-| **AI Engine** | Google Gemini 3 Flash Preview | Triage, SOP generation, incident intelligence |
+| **AI Engine** | Gemini 3 Flash Preview (Triage) + Gemini 1.5 Flash (Debrief) | Triage, SOP generation, incident intelligence |
 | **Auth** | JWT + bcrypt | Secure role-based authentication |
 | **Charts** | Recharts | Analytics visualizations |
 | **QR Codes** | qrcode.react | Zone-based guest access and printable links |
@@ -345,7 +346,9 @@ crisislink/
 │   ├── qr/                       # QR code manager for zones/rooms
 │   ├── staff/                    # Staff pages
 │   │   ├── dashboard/            # Live incident dashboard
+│   │   ├── incidents/            # Filterable incident archives
 │   │   ├── incident/[id]/        # Incident detail + triage + chat + timeline
+│   │   ├── map/                  # Staff-specific live venue map
 │   │   └── drill/                # Drill mode simulator
 │   ├── admin/                    # Admin pages
 │   │   ├── dashboard/            # Command center
@@ -392,7 +395,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 <div align="center">
   <strong>🚨 Built for Google Solution Challenge 2026</strong><br/>
   <em>Making hospitality spaces safer, one alert at a time.</em><br/><br/>
-  <a href="YOUR_LIVE_URL_HERE">🌐 Live Demo</a> ·
+  <a href="https://crisislink-928472984789.us-central1.run.app">🌐 Live Demo</a> ·
   <a href="YOUR_VIDEO_URL_HERE">▶ Watch Demo</a> ·
   <a href="https://github.com/leo-leo-691/crisis-link/issues">🐛 Report Bug</a>
 </div>
