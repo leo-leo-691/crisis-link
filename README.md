@@ -71,6 +71,8 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | 🎬 **Demo Autopilot** | Press `D` on the landing page to watch a fully automated live demonstration |
 | 🛡️ **Smart Fallback** | Hybrid response system: switches to keyword-based SOPs if AI is unreachable |
 | 📢 **Broadcast System** | Admins send instant one-to-many alerts to all connected staff |
+| 🛡️ **Cloud Observability** | Integrated Google Cloud Logging for enterprise security auditing |
+| 📂 **Portable Audit Logs** | Export currently filtered incidents to machine-readable JSON for legal review |
 
 ---
 
@@ -172,6 +174,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | **PWA** | next-pwa | Offline support and installability |
 | **Server** | Custom Node.js | Next.js + Socket.IO on same port |
 | **Deployment** | Docker + Google Cloud Run | Containerized, scalable deployment |
+| **Observability** | Google Cloud Logging | Enterprise-grade incident and security auditing |
 
 ---
 
