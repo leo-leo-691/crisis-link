@@ -167,7 +167,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | **State** | Zustand | Lightweight client-side state management |
 | **Real-Time** | Socket.IO | WebSocket event bus for live updates |
 | **Database** | Supabase (Postgres) | Persistent cloud database |
-| **AI Engine** | Gemini 3 Flash Preview (Triage) + Gemini 1.5 Flash (Debrief) | Triage, SOP generation, incident intelligence |
+| **AI Engine** | Gemini 3 Flash Preview | Triage, SOP generation, incident intelligence |
 | **Auth** | JWT + bcrypt | Secure role-based authentication |
 | **Charts** | Recharts | Analytics visualizations |
 | **QR Codes** | qrcode.react | Zone-based guest access and printable links |
