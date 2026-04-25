@@ -43,14 +43,6 @@ function normalizeActiveIncidents(payload) {
   return incidents.filter((incident) => incident.status !== 'resolved' && !incident.is_drill);
 }
 
-export default function HomePage() {
-  return (
-    <AppProviders>
-      <HomeContent />
-    </AppProviders>
-  );
-}
-
 function ShieldIcon({ size = 52 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,6 +57,59 @@ function ShieldIcon({ size = 52 }) {
         </linearGradient>
       </defs>
     </svg>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AppProviders>
+      <HomeContent />
+    </AppProviders>
+  );
+}
+
+function TacticalRadar() {
+  return (
+    <div className="relative w-48 h-48 flex items-center justify-center mx-auto my-4">
+      <div className="absolute inset-0 border border-red-500/10 rounded-full" />
+      <div className="absolute inset-[15%] border border-red-500/15 rounded-full" />
+      <div className="absolute inset-[30%] border border-red-500/20 rounded-full" />
+      <div className="radar-ring w-full h-full" style={{ animationDelay: '0s' }} />
+      <div className="radar-ring w-full h-full" style={{ animationDelay: '1s' }} />
+      <div className="radar-ring w-full h-full" style={{ animationDelay: '2s' }} />
+      <div className="absolute inset-0" style={{ animation: 'radar-rotate 10s linear infinite', background: 'conic-gradient(from 0deg, transparent 80%, rgba(230,57,70,0.2) 100%)', borderRadius: '50%' }} />
+      <div className="relative z-10 filter drop-shadow(0 0 12px rgba(230,57,70,0.5))">
+        <ShieldIcon size={52} />
+      </div>
+      {/* Dynamic blips */}
+      <motion.div className="absolute top-1/4 right-1/3 w-1.5 h-1.5 bg-red-500 rounded-full" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} />
+      <motion.div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-red-400 rounded-full" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 1.2 }} />
+    </div>
+  );
+}
+
+function FloatingSOS() {
+  const router = useRouter();
+  return (
+    <motion.button
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => router.push('/sos')}
+      className="fixed bottom-6 right-6 z-50 flex flex-col items-center justify-center w-20 h-20 rounded-full shadow-2xl btn-emergency-floating lg:w-24 lg:h-24"
+    >
+      <div className="relative">
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+        </span>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="currentColor" />
+        </svg>
+      </div>
+      <span className="mono text-[10px] font-black tracking-tighter mt-1">REPORT SOS</span>
+    </motion.button>
   );
 }
 
@@ -94,8 +139,8 @@ function HomeContent() {
     const loadLiveData = async () => {
       try {
         const [analyticsRes, incidentsRes] = await Promise.all([
-          fetch('/api/analytics', { cache: 'no-store' }),
-          fetch('/api/incidents?status=active&is_drill=false&limit=3', { cache: 'no-store' }),
+          fetch('/api/analytics/summary', { cache: 'force-cache' }),
+          fetch('/api/incidents/public?limit=3', { cache: 'force-cache' }),
         ]);
 
         const analyticsPayload = await analyticsRes.json();
@@ -103,7 +148,7 @@ function HomeContent() {
         if (cancelled) return;
 
         if (analyticsRes.ok) setAnalytics(analyticsPayload);
-        if (incidentsRes.ok) setActiveIncidents(normalizeActiveIncidents(incidentsPayload));
+        if (incidentsRes.ok) setActiveIncidents(normalizeActiveIncidents(incidentsPayload.incidents));
       } catch (error) {
         console.error('Failed to load landing page live data:', error);
       }
@@ -112,33 +157,50 @@ function HomeContent() {
     loadLiveData();
 
     let socketRef = null;
-    import('socket.io-client').then(({ io }) => {
-      if (cancelled) return;
-      socketRef = io(window.location.origin, {
-        transports: ['websocket', 'polling'],
-      });
+    let socketTimer = null;
+    let usedIdleCallback = false;
 
-      socketRef.on('incident:new', (incident) => {
-        if (incident?.is_drill) return;
-        setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 3));
-        if (incident?.created_at && isToday(incident.created_at)) {
-          setAnalytics((current) => current ? { ...current, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1, todayIncidents: (current.todayIncidents || 0) + 1 } : current);
-        }
-      });
-
-      socketRef.on('incident:updated', (incident) => {
-        if (!incident || incident.is_drill) return;
-        setActiveIncidents((current) => {
-          const next = current.map((item) => item.id === incident.id ? { ...item, ...incident } : item);
-          return normalizeActiveIncidents(next);
+    const connectLiveFeed = () => {
+      import('socket.io-client').then(({ io }) => {
+        if (cancelled) return;
+        socketRef = io(window.location.origin, {
+          transports: ['websocket'],
         });
+
+        socketRef.on('incident:new', (incident) => {
+          if (incident?.is_drill) return;
+          setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 3));
+          if (incident?.created_at && isToday(incident.created_at)) {
+            setAnalytics((current) => current ? { ...current, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1, todayIncidents: (current.todayIncidents || 0) + 1 } : current);
+          }
+        });
+
+        socketRef.on('incident:updated', (incident) => {
+          if (!incident || incident.is_drill) return;
+          setActiveIncidents((current) => {
+            const next = current.map((item) => item.id === incident.id ? { ...item, ...incident } : item);
+            return normalizeActiveIncidents(next);
+          });
+        });
+      }).catch((error) => {
+        console.error('Failed to subscribe to landing page socket feed:', error);
       });
-    }).catch((error) => {
-      console.error('Failed to subscribe to landing page socket feed:', error);
-    });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      usedIdleCallback = true;
+      socketTimer = window.requestIdleCallback(connectLiveFeed, { timeout: 2000 });
+    } else {
+      socketTimer = window.setTimeout(connectLiveFeed, 1200);
+    }
 
     return () => {
       cancelled = true;
+      if (usedIdleCallback && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(socketTimer);
+      } else if (socketTimer !== null) {
+        window.clearTimeout(socketTimer);
+      }
       if (socketRef) socketRef.disconnect();
     };
   }, []);
@@ -157,22 +219,8 @@ function HomeContent() {
     const nodes = document.querySelectorAll('.animate-on-scroll');
     nodes.forEach((node) => observer.observe(node));
 
-    let frameId = null;
-    let lenis = null;
-
-    if (window.Lenis) {
-      lenis = new window.Lenis({ duration: 0.8, smooth: true });
-      const raf = (time) => {
-        lenis.raf(time);
-        frameId = window.requestAnimationFrame(raf);
-      };
-      frameId = window.requestAnimationFrame(raf);
-    }
-
     return () => {
       observer.disconnect();
-      if (frameId) window.cancelAnimationFrame(frameId);
-      if (lenis) lenis.destroy();
     };
   }, []);
 
@@ -255,10 +303,10 @@ function HomeContent() {
         backgroundSize: 'auto, auto, 60px 60px, 60px 60px',
       }}
     >
-      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
-        <div className="grid lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-6 items-start">
-          <aside className="animate-on-scroll hidden lg:block">
-            <div className="glass p-6 space-y-5">
+      <section className="max-w-[1536px] mx-auto px-4 pt-12 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <aside className="animate-on-scroll hidden lg:block lg:col-span-3 space-y-6">
+            <div className="hud-panel glass-dark">
               <p className="mono text-[10px] uppercase tracking-widest text-red-300">SYSTEM STATUS</p>
               <div className="space-y-3">
                 {[
@@ -284,11 +332,11 @@ function HomeContent() {
             </div>
           </aside>
 
-          <section className="animate-on-scroll space-y-6">
-            <div className="glass-strong w-full max-w-[760px] mx-auto overflow-hidden border border-red-500/20">
-              <div className="px-8 pt-8 pb-6 text-center space-y-4">
+          <section className="animate-on-scroll lg:col-span-6 space-y-6">
+            <div className="glass-strong w-full max-w-[480px] mx-auto overflow-hidden border border-red-500/20">
+              <div className="px-5 pt-6 pb-4 text-center space-y-3">
                 <div className="flex justify-center" style={{ filter: 'drop-shadow(0 0 16px rgba(230,57,70,0.5))' }}>
-                  <ShieldIcon size={56} />
+                  <ShieldIcon size={36} />
                 </div>
                 <div className="space-y-3">
                   <p className="mono text-[11px] text-white/40 tracking-[0.24em]">EMERGENCY RESPONSE PLATFORM</p>
@@ -296,28 +344,29 @@ function HomeContent() {
                     <span className="text-white">Crisis</span>
                     <span className="text-red-500">Link</span>
                   </h1>
-                  <p className="max-w-2xl mx-auto text-sm sm:text-base text-white/60">
-                    Live venue incident coordination for hospitality teams, with AI triage, instant guest SOS intake, and drill-safe response workflows.
+                  <p className="max-w-2xl mx-auto text-base sm:text-lg text-white/50 leading-relaxed">
+                    Unified venue incident coordination for modern hospitality. Real-time AI triage, instant guest SOS, and secure responder workflows.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                <div className="flex flex-wrap justify-center gap-3 pt-4">
                   {activeIncidents.length > 0 ? (
                     activeIncidents.slice(0, 3).map((incident) => (
                       <span
                         key={incident.id}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold border"
+                        className="px-4 py-2 rounded-full text-[11px] font-bold tracking-wider border transition-all hover:bg-white/5"
                         style={{
-                          background: incident.severity === 'critical' ? 'rgba(230,57,70,0.18)' : 'rgba(255,255,255,0.06)',
-                          borderColor: incident.severity === 'critical' ? 'rgba(230,57,70,0.35)' : 'rgba(255,255,255,0.12)',
+                          background: incident.severity === 'critical' ? 'rgba(230,57,70,0.12)' : 'rgba(255,255,255,0.03)',
+                          borderColor: incident.severity === 'critical' ? 'rgba(230,57,70,0.25)' : 'rgba(255,255,255,0.08)',
+                          color: incident.severity === 'critical' ? '#FF6B6B' : 'rgba(255,255,255,0.6)',
                         }}
                       >
-                        {String(incident.type || 'incident').toUpperCase()} · {incident.zone}
+                        ● {String(incident.type || 'incident').toUpperCase()} · {incident.zone}
                       </span>
                     ))
                   ) : (
-                    <span className="px-3 py-1.5 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/75">
-                      SYSTEM ACTIVE · ALL CLEAR
+                    <span className="px-4 py-2 rounded-full text-[11px] font-bold tracking-wider border border-white/5 bg-white/2 text-white/40">
+                      SYSTEM NOMINAL · MONITORING ACTIVE
                     </span>
                   )}
                 </div>
@@ -325,11 +374,11 @@ function HomeContent() {
 
               <div className="divider" />
 
-              <div className="px-8 py-6">
+              <div className="px-5 py-4">
                 <LoginForm email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
               </div>
 
-              <div className="px-8 pb-6 space-y-4">
+              <div className="px-5 pb-4 space-y-4">
                 <p className="mono text-center text-[10px] text-white/30 tracking-[0.20em]">DEMO ACCOUNTS — CLICK TO AUTO-FILL</p>
                 <motion.div className="flex gap-2" initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}>
                   {DEMO_ACCOUNTS.map((account) => (
@@ -341,7 +390,7 @@ function HomeContent() {
                 <div className="pt-2 flex justify-center">
                   <button
                     onClick={startDemo}
-                    className="border border-emergency text-emergency hover:bg-emergency hover:text-white transition-all px-8 py-3 rounded-xl font-semibold"
+                    className="border border-emergency text-emergency hover:bg-emergency hover:text-white transition-all px-6 py-2 rounded-xl font-semibold text-sm"
                   >
                     ▶ Watch Live Demo
                   </button>
@@ -353,45 +402,106 @@ function HomeContent() {
               <GuestTracker />
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              {FEATURE_CARDS.map((card) => (
-                <article key={card.eyebrow} className="glass p-5 animate-on-scroll">
-                  <p className="mono text-[10px] tracking-[0.18em] text-red-300">{card.eyebrow}</p>
-                  <h2 className="text-white font-semibold text-xl mt-3">{card.title}</h2>
-                  <p className="text-sm text-white/60 mt-2 leading-relaxed">{card.body}</p>
-                </article>
-              ))}
-            </div>
           </section>
 
-          <aside className="animate-on-scroll hidden lg:block">
-            <div className="glass p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="mono text-[10px] text-white/35 tracking-[0.18em]">LIVE INCIDENT FEED</p>
-                <span className="mono text-[10px] text-red-300 tracking-[0.12em]">{activeIncidents.length} ACTIVE</span>
+          <aside className="animate-on-scroll hidden lg:block lg:col-span-3 space-y-6">
+            <div className="hud-panel glass-dark">
+              <div className="flex items-center justify-between mb-4">
+                <p className="mono text-[10px] text-white/35 tracking-[0.2em]">LIVE INCIDENT FEED</p>
+                <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-500 mono text-[9px] border border-red-500/20">{activeIncidents.length} ACTIVE</span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {activeIncidents.length === 0 ? (
-                  <p className="text-sm italic text-white/50">No live incidents in the database right now.</p>
+                  <p className="text-xs italic text-white/30 text-center py-8">Awaiting incident stream...</p>
                 ) : (
                   activeIncidents.slice(0, 3).map((incident) => (
-                    <div key={incident.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div key={incident.id} className="relative pl-4 group">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-white/10 group-hover:bg-red-500 transition-colors" />
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-white">{String(incident.type || 'incident').toUpperCase()}</span>
-                        <span className="text-[10px] uppercase tracking-wide text-white/40">{incident.zone}</span>
+                        <span className="text-xs font-bold text-white/80">{String(incident.type || 'incident').toUpperCase()}</span>
+                        <span className="text-[9px] mono text-white/30">{incident.zone}</span>
                       </div>
-                      <p className="text-xs text-white/55 mt-1">{incident.description || 'No description provided.'}</p>
+                      <p className="text-[11px] text-white/45 mt-1 line-clamp-2">{incident.description || 'No description provided.'}</p>
                     </div>
                   ))
                 )}
               </div>
-              <div className="divider" />
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full animate-ping-slow" style={{ background: '#E63946' }} />
-                <p className="mono text-[10px] text-white/40 tracking-[0.08em]">SOCKET STREAM LISTENING FOR INCIDENT:NEW</p>
+              <div className="divider my-6" />
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-red-500 animate-ping opacity-50" />
+                </div>
+                <p className="mono text-[9px] text-white/30 tracking-widest">ENCRYPTED SOCKET ACTIVE</p>
               </div>
             </div>
           </aside>
+        </div>
+
+        {/* Feature Bento Grid — full width below the 3-col grid */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-12">
+          {/* Feature 1: AI Triage (Large) */}
+          <article className="glass-bento col-span-1 md:col-span-4 p-8 flex flex-col justify-between min-h-[260px] group">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20 group-hover:scale-110 transition-transform">
+                  <span className="text-xl">🤖</span>
+                </div>
+                <p className="mono text-[10px] tracking-[0.3em] text-red-400">01. ARTIFICIAL INTELLIGENCE</p>
+              </div>
+              <h2 className="text-2xl font-bold text-white tracking-tight leading-tight">Eight-step SOP guidance in seconds</h2>
+              <p className="text-sm text-white/40 max-w-md leading-relaxed">
+                Automated severity analysis and evacuation protocols generated instantly for every verified alert.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] mono text-white/25 mt-4">
+              <span className="w-1 h-1 rounded-full bg-green-500/50" />
+              ANALYSIS ENGINE ONLINE
+            </div>
+          </article>
+
+          {/* Feature 2: Live Command (Medium) */}
+          <article className="glass-bento col-span-1 md:col-span-2 p-7 flex flex-col justify-between group">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                <span className="text-xl">📡</span>
+              </div>
+              <div>
+                <p className="mono text-[10px] tracking-[0.2em] text-blue-400">02. COMMAND</p>
+                <h2 className="text-lg font-bold text-white mt-1 leading-snug">Venue-wide coordination</h2>
+              </div>
+            </div>
+            <p className="text-xs text-white/40 leading-relaxed">
+              Real-time maps and secure channels in one workspace.
+            </p>
+          </article>
+
+          {/* Feature 3: Guest SOS */}
+          <article className="glass-bento col-span-1 md:col-span-3 p-7 flex flex-col justify-between group">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+                <span className="text-xl">🆘</span>
+              </div>
+              <div>
+                <p className="mono text-[10px] tracking-[0.2em] text-amber-400">03. GUEST SOS</p>
+                <h2 className="text-lg font-bold text-white mt-1 leading-snug">Instant Incident Reporting</h2>
+              </div>
+            </div>
+            <p className="text-xs text-white/40 leading-relaxed">
+              Fast QR reporting with live tracking status for guest safety.
+            </p>
+          </article>
+
+          {/* Feature 4: Uptime Stat */}
+          <article className="glass-bento col-span-1 md:col-span-3 p-7 flex items-center justify-between group overflow-hidden relative">
+            <div className="relative z-10">
+              <p className="mono text-[10px] tracking-[0.2em] text-white/30 uppercase">Uptime Reliability</p>
+              <p className="text-3xl font-black text-white mt-1">99.99<span className="text-sm text-white/30">%</span></p>
+            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-red-500/5 to-transparent flex items-center justify-center opacity-30">
+              <div className="w-12 h-12 rounded-full border border-white/5 animate-ping" />
+            </div>
+          </article>
         </div>
       </section>
 
@@ -413,6 +523,8 @@ function HomeContent() {
           </div>
         </div>
       )}
+
+      <FloatingSOS />
     </main>
   );
 }
@@ -475,14 +587,15 @@ function LoginForm({ email, setEmail, password, setPassword }) {
           <button
             type="button"
             onClick={() => setShowPw((current) => !current)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-lg"
+            aria-label={showPw ? 'Hide password' : 'Show password'}
+            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-lg"
             style={{ color: 'rgba(232,234,240,0.35)', background: 'none', border: 'none' }}
           >
             {showPw ? '🙈' : '👁️'}
           </button>
         </div>
       </div>
-      <button id="btn-login" type="submit" disabled={loading} className="btn-primary w-full" style={{ height: 48, fontSize: 15 }}>
+      <button id="btn-login" type="submit" disabled={loading} className="btn-primary w-full" style={{ height: 38, fontSize: 13 }}>
         {loading ? (
           <>
             <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -523,7 +636,7 @@ function GuestSOSStrip() {
     <button
       id="btn-sos-guest"
       onClick={() => router.push('/sos')}
-      className="w-full py-4 flex items-center justify-center gap-3 transition-all hover:opacity-90"
+      className="w-full py-2.5 flex items-center justify-center gap-3 transition-all hover:opacity-90"
       style={{ background: 'rgba(230,57,70,0.10)', borderTop: '0.5px solid rgba(230,57,70,0.20)' }}
     >
       <span className="w-2 h-2 rounded-full animate-ping-slow" style={{ background: '#E63946' }} />
@@ -545,20 +658,20 @@ function GuestTracker() {
   };
 
   return (
-    <form onSubmit={submit} className="w-full py-4 px-6 flex flex-col sm:flex-row items-center gap-3 transition-all" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
-      <p className="mono text-[10px] text-white/50 tracking-[0.16em] sm:hidden w-full text-left mb-1">TRACK INCIDENT</p>
+    <form onSubmit={submit} className="w-full py-2.5 px-5 flex flex-col sm:flex-row items-center gap-3 transition-all" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
+      <p className="mono text-[9px] text-white/50 tracking-[0.16em] sm:hidden w-full text-left mb-1">TRACK INCIDENT</p>
       <input
         type="text"
         value={trackingId}
         onChange={(e) => setTrackingId(e.target.value)}
         placeholder="Enter Tracking ID..."
-        className="input-glass flex-1 !py-2 text-sm w-full"
-        style={{ height: 42 }}
+        className="input-glass flex-1 !py-1.5 text-sm w-full"
+        style={{ height: 38 }}
       />
       <button
         type="submit"
-        className="px-5 py-2 rounded-lg text-sm font-semibold border transition-all hover:bg-white/10 w-full sm:w-auto"
-        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', height: 42 }}
+        className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:bg-white/10 w-full sm:w-auto"
+        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', height: 38 }}
       >
         Track Status
       </button>

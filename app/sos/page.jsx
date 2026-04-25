@@ -241,7 +241,7 @@ function SOSForm() {
                 <div>
                   <label className="mono block mb-1.5" style={{ fontSize: 10, color: 'rgba(232,234,240,0.40)', letterSpacing: '0.08em' }}>AREA / ZONE</label>
                   <div className="relative">
-                    <select className="input-glass pr-10" value={zone} onChange={e => setZone(e.target.value)}>
+                    <select className="input-glass pr-10 dark-select" value={zone} onChange={e => setZone(e.target.value)}>
                       <option value="">Select area…</option>
                       {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
                     </select>

@@ -32,7 +32,7 @@ export async function GET(request) {
       totalActive: count || 0,
     }, {
       headers: {
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'public, max-age=0, s-maxage=10, stale-while-revalidate=30',
       },
     });
   } catch (err) {

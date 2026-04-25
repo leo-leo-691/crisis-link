@@ -4,6 +4,7 @@ import { analyzeIncident } from '@/lib/aiTriage';
 import { getIO } from '@/lib/socket';
 import { SOP_TASKS } from '@/lib/sopTasks';
 import { getUserFromRequest } from '@/lib/auth';
+import { logEvent } from '@/lib/gcpLogger';
 
 export const dynamic = 'force-dynamic';
 
@@ -169,6 +170,10 @@ export async function POST(request) {
       })
       .select(INCIDENT_LIST_COLUMNS)
       .maybeSingle();
+ 
+    if (inserted) {
+      logEvent('NOTICE', `New incident reported: ${id}`, { type, zone, reporter: inserted.reporter_name });
+    }
 
     if (insertError) {
       if (insertError.code === '23505') {

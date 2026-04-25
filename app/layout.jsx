@@ -1,6 +1,12 @@
 import './globals.css';
-import Script from 'next/script';
+import { Outfit } from 'next/font/google';
 import OfflineBanner from '@/components/OfflineBanner';
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'CrisisLink \u2014 Emergency Response Platform',
@@ -16,22 +22,12 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        <Script
-          src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"
-          strategy="afterInteractive"
-        />
       </head>
-
-      <body className="bg-navy text-white antialiased">
+ 
+      <body className={`${outfit.className} bg-[#05070F] text-white antialiased`} suppressHydrationWarning>
         <OfflineBanner />
         {children}
       </body>

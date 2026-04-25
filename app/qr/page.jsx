@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
 
@@ -18,21 +19,21 @@ const QR_ZONES = [
 
 function QRCard({ zone }) {
   const [baseUrl, setBaseUrl] = useState('');
+  const qrId = `qr-canvas-${zone.id}`;
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
   }, []);
 
   const url = baseUrl ? `${baseUrl}/sos?zone=${encodeURIComponent(zone.name)}${zone.room ? `&room=${zone.room}` : ''}` : '';
-  // Use a public QR generation API
-  const qrSrc = url
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&color=ffffff&bgcolor=1A2035`
-    : '';
 
   const download = async () => {
-    if (!qrSrc) return;
+    if (!url) return;
+    const canvas = document.getElementById(qrId);
+    if (!(canvas instanceof HTMLCanvasElement)) return;
+
     const a = document.createElement('a');
-    a.href = qrSrc;
+    a.href = canvas.toDataURL('image/png');
     a.download = `crisislink-qr-${zone.id}.png`;
     a.click();
   };
@@ -47,9 +48,15 @@ function QRCard({ zone }) {
       <div className="w-10 h-10 rounded-xl bg-white/8 flex items-center justify-center text-xl">📍</div>
       <p className="font-semibold text-white text-sm">{zone.name}</p>
       <div className="rounded-xl overflow-hidden border border-white/10 min-h-[160px] min-w-[160px] flex items-center justify-center bg-white/5">
-        {qrSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={qrSrc} alt={`QR for ${zone.name}`} width={160} height={160} className="block" />
+        {url ? (
+          <QRCodeCanvas
+            id={qrId}
+            value={url}
+            size={160}
+            bgColor="#1A2035"
+            fgColor="#FFFFFF"
+            includeMargin
+          />
         ) : (
           <span className="text-xs text-white/35">Generating QR...</span>
         )}

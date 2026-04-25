@@ -9,7 +9,7 @@
 [![Video Demo](https://img.shields.io/badge/▶_Watch-Demo-FF0000?style=for-the-badge&logo=youtube)](YOUR_VIDEO_URL_HERE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![Gemini AI](https://img.shields.io/badge/Gemini_1.5-Flash-4285F4?style=for-the-badge&logo=google)](https://aistudio.google.com)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3-Flash-4285F4?style=for-the-badge&logo=google)](https://aistudio.google.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=for-the-badge&logo=socket.io)](https://socket.io)
 [![Docker](https://img.shields.io/badge/Docker-Cloud_Run-2496ED?style=for-the-badge&logo=docker)](https://cloud.google.com/run)
@@ -37,7 +37,7 @@ During a crisis, three groups need to act simultaneously but often cannot:
 
 CrisisLink is an **AI-first emergency command and control platform** that bridges the gap between distressed guests, on-site staff, and emergency commanders — in real time.
 
-Powered by **Google Gemini 1.5 Flash**, it triages incidents in **under 2 seconds** — generating severity assessments, 8-step SOPs, evacuation routes, and staff deployment recommendations before a human supervisor has picked up a radio.
+Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 seconds** — generating severity assessments, 8-step SOPs, evacuation routes, and staff deployment recommendations before a human supervisor has picked up a radio.
 
 > 💬 **"The 2-Second Triage Advantage"** — CrisisLink doesn't just report emergencies. It interprets them, coordinates the response, and documents every action automatically.
 
@@ -50,7 +50,7 @@ Powered by **Google Gemini 1.5 Flash**, it triages incidents in **under 2 second
 | Feature | Description |
 |---------|-------------|
 | 🆘 **Guest SOS Portal** | No login required. Report emergencies in seconds via web or QR code scan |
-| 🤖 **AI Triage Engine** | Gemini 1.5 Flash classifies severity, generates 8-step SOP, evacuation route, and do-not-do list |
+| 🤖 **AI Triage Engine** | Gemini 3 Flash Preview classifies severity, generates 8-step SOP, evacuation route, and do-not-do list |
 | 📡 **Real-Time Alerts** | Socket.IO broadcasts incidents instantly to all staff dashboards simultaneously |
 | 🗺️ **Live Venue Map** | SVG floor plan with color-coded severity zones and animated incident pins |
 | ✅ **Task Orchestration** | Dynamic checklists auto-assigned by role, synced in real time across all devices |
@@ -79,7 +79,7 @@ Powered by **Google Gemini 1.5 Flash**, it triages incidents in **under 2 second
 ```
 1. 🆘  Guest scans QR code or visits /sos — reports emergency without login
          ↓
-2. 🤖  Gemini 1.5 Flash analyzes the report in under 2 seconds
+2. 🤖  Gemini 3 Flash Preview analyzes the report in under 2 seconds
        Outputs: severity · 8-step SOP · evacuation route · do-not-do list
          ↓
 3. 📡  Socket.IO broadcasts incident:new to ALL connected staff simultaneously
@@ -164,7 +164,7 @@ Powered by **Google Gemini 1.5 Flash**, it triages incidents in **under 2 second
 | **State** | Zustand | Lightweight client-side state management |
 | **Real-Time** | Socket.IO | WebSocket event bus for live updates |
 | **Database** | Supabase (Postgres) | Persistent cloud database |
-| **AI Engine** | Google Gemini 1.5 Flash | Triage, SOP generation, incident intelligence |
+| **AI Engine** | Google Gemini 3 Flash Preview | Triage, SOP generation, incident intelligence |
 | **Auth** | JWT + bcrypt | Secure role-based authentication |
 | **Charts** | Recharts | Analytics visualizations |
 | **QR Codes** | qrcode.react | Zone-based guest access and printable links |

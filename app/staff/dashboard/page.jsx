@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
@@ -19,7 +19,6 @@ function StaffContent() {
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
-  const socket    = useSocketStore(s => s.socket);
 
   const [ownFilter, setOwnFilter] = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -30,18 +29,12 @@ function StaffContent() {
     if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
   }, [loading, user, router]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     await fetchIncidents({});
     await fetchZones();
-  };
-  useEffect(() => { if (user) load(); }, [user]);
+  }, [fetchIncidents, fetchZones]);
 
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('incident:new', load);
-    socket.on('incident:updated', load);
-    return () => { socket.off('incident:new', load); socket.off('incident:updated', load); };
-  }, [socket]);
+  useEffect(() => { if (user) load(); }, [user, load]);
 
   const mine = ownFilter
     ? incidents.filter(i => i.recommended_responder === user?.name)

@@ -142,7 +142,7 @@ function IncidentsListContent() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer"
+                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
                 style={{ fontSize: 14, minWidth: 150 }}
               >
                 <option value="all">All Statuses</option>
@@ -157,7 +157,7 @@ function IncidentsListContent() {
               <select
                 value={severityFilter}
                 onChange={e => setSeverityFilter(e.target.value)}
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer"
+                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
                 style={{ fontSize: 14, minWidth: 150 }}
               >
                 <option value="all">All Severities</option>

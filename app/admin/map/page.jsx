@@ -1,12 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
 import VenueMap from '@/components/VenueMap';
 import useAuthStore from '@/lib/stores/authStore';
 import useIncidentStore from '@/lib/stores/incidentStore';
-import useSocketStore from '@/lib/stores/socketStore';
 
 export default function VenueMapPage() {
   return <AppProviders><MapContent /></AppProviders>;
@@ -16,7 +15,6 @@ function MapContent() {
   const { user, loading } = useAuthStore();
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
-  const socket = useSocketStore(s => s.socket);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
@@ -25,22 +23,16 @@ function MapContent() {
     if (user.role !== 'admin') { router.push('/staff/dashboard'); }
   }, [loading, user, router]);
 
-  useEffect(() => {
-    if (user) {
-      fetchIncidents({});
-      fetchZones();
-    }
-  }, [user]);
+  const load = useCallback(async () => {
+    await fetchIncidents({});
+    await fetchZones();
+  }, [fetchIncidents, fetchZones]);
 
   useEffect(() => {
-    if (!socket) return;
-    socket.on('incident:created', () => { fetchIncidents({}); fetchZones(); });
-    socket.on('incident:updated', () => { fetchIncidents({}); fetchZones(); });
-    return () => {
-      socket.off('incident:created');
-      socket.off('incident:updated');
-    };
-  }, [socket]);
+    if (user) {
+      load();
+    }
+  }, [user, load]);
 
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
 

@@ -1,28 +1,38 @@
-const { NextResponse } = require('next/server');
-
+import { NextResponse } from 'next/server';
+import supabase from '@/lib/supabase';
+import bcrypt from 'bcrypt';
+import { generateToken } from '@/lib/auth';
+import { logEvent } from '@/lib/gcpLogger';
+ 
 export async function POST(request) {
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
   try {
-    const supabase = require('@/lib/supabase');
-    const bcrypt = require('bcrypt');
-    const { generateToken } = require('@/lib/auth');
-    
     const { email, password } = await request.json();
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
-
+ 
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email.toLowerCase().trim())
       .eq('is_active', true)
       .maybeSingle();
+ 
     if (error) throw error;
-    if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-
+    
+    if (!user) {
+      logEvent('WARNING', `Failed login attempt for email: ${email}`, { ip });
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+ 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-
+    if (!valid) {
+      logEvent('WARNING', `Failed login attempt for user: ${user.email}`, { ip, userId: user.id });
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+ 
+    logEvent('INFO', `Successful login: ${user.email}`, { ip, userId: user.id, role: user.role });
     const token = generateToken(user);
     return NextResponse.json({
       token,
@@ -30,6 +40,8 @@ export async function POST(request) {
     });
   } catch (err) {
     console.error('[POST /api/auth/login]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logEvent('ERROR', `Critical login failure: ${err.message}`, { ip });
+    return NextResponse.json({ error: 'Authentication service error' }, { status: 500 });
   }
-};
+}
+

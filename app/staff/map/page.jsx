@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
@@ -7,7 +7,6 @@ import VenueMap from '@/components/VenueMap';
 import IncidentCard from '@/components/IncidentCard';
 import useAuthStore from '@/lib/stores/authStore';
 import useIncidentStore from '@/lib/stores/incidentStore';
-import useSocketStore from '@/lib/stores/socketStore';
 import { AnimatePresence } from 'framer-motion';
 
 export default function StaffMapPage() {
@@ -17,8 +16,7 @@ export default function StaffMapPage() {
 function StaffMapContent() {
   const { user, loading } = useAuthStore();
   const router = useRouter();
-  const { incidents, fetchIncidents, fetchZones } = useIncidentStore();
-  const socket = useSocketStore((s) => s.socket);
+  const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const [selectedZone, setSelectedZone] = useState(null);
 
   useEffect(() => {
@@ -32,26 +30,14 @@ function StaffMapContent() {
     }
   }, [loading, user, router]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     await fetchIncidents({});
     await fetchZones();
-  };
+  }, [fetchIncidents, fetchZones]);
 
   useEffect(() => {
     if (user) load();
-  }, [user]);
-
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('incident:new', load);
-    socket.on('incident:updated', load);
-    socket.on('incident:created', load);
-    return () => {
-      socket.off('incident:new', load);
-      socket.off('incident:updated', load);
-      socket.off('incident:created', load);
-    };
-  }, [socket]);
+  }, [user, load]);
 
   const activeIncidents = incidents.filter((incident) => incident.status !== 'resolved');
   const zoneIncidents = selectedZone
@@ -79,6 +65,7 @@ function StaffMapContent() {
           <div className="glass p-3 rounded-2xl border border-white/5 shadow-2xl">
             <div className="h-[680px]">
               <VenueMap
+                zones={zones}
                 incidents={activeIncidents}
                 onZoneClick={(zone) => setSelectedZone(zone)}
               />

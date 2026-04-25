@@ -1,12 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function VenueMap({ incidents = [], onZoneClick }) {
-  const [zones, setZones] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function VenueMap({ incidents = [], zones: initialZones = null, onZoneClick }) {
+  const [zones, setZones] = useState(Array.isArray(initialZones) ? initialZones : []);
+  const [loading, setLoading] = useState(!Array.isArray(initialZones));
   const [hoveredZone, setHoveredZone] = useState(null);
 
   useEffect(() => {
+    if (Array.isArray(initialZones)) {
+      setZones(initialZones);
+      setLoading(false);
+      return undefined;
+    }
+
     fetch('/api/zones')
       .then(r => r.json())
       .then(data => {
@@ -17,7 +23,7 @@ export default function VenueMap({ incidents = [], onZoneClick }) {
         console.error('Failed to load zones:', err);
         setLoading(false);
       });
-  }, []);
+  }, [initialZones]);
 
   function getZoneSeverity(zoneName) {
     const zoneIncidents = incidents.filter(

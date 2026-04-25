@@ -9,7 +9,11 @@ export async function GET() {
       .select('*')
       .order('floor', { ascending: true });
     if (error) throw error;
-    return NextResponse.json(data || []);
+    return NextResponse.json(data || [], {
+      headers: {
+        'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (e) {
     return NextResponse.json([], { status: 500 });
   }
