@@ -102,6 +102,25 @@ function SettingsContent() {
     addToast({ message: `Escalation timeout set to ${escalationTimeout} minutes`, type: 'success' });
   };
 
+  const wipeData = async () => {
+    if (!window.confirm('CRITICAL: This will permanently delete ALL incidents, tasks, and messages. This cannot be undone. Proceed?')) return;
+    
+    try {
+      const res = await fetch('/api/admin/wipe', { 
+        method: 'POST', 
+        headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` } 
+      });
+      if (res.ok) {
+        addToast({ message: 'All incident data wiped!', type: 'success' });
+      } else {
+        const d = await res.json();
+        addToast({ message: d.error || 'Wipe failed', type: 'error' });
+      }
+    } catch {
+      addToast({ message: 'System error during wipe', type: 'error' });
+    }
+  };
+
   const addZone = async () => {
     if (!newZone.trim()) return;
     try {
@@ -318,6 +337,12 @@ function SettingsContent() {
                 className="px-4 py-2 bg-white/8 hover:bg-white/14 border border-white/10 text-muted hover:text-white text-sm rounded-lg transition-all"
               >
                 🆘 Test SOS Page
+              </button>
+              <button
+                onClick={wipeData}
+                className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-bold rounded-lg transition-all"
+              >
+                ⚠️ Wipe All Incidents
               </button>
             </div>
           </Section>

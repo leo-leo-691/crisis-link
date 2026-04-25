@@ -175,6 +175,25 @@ function IncidentDetail() {
     }
   };
 
+  const deleteIncident = async () => {
+    if (!window.confirm('Are you sure you want to PERMANENTLY delete this incident? This will remove all tasks, messages, and timeline logs.')) return;
+    try {
+      const res = await fetch(`/api/incidents/${id}`, { 
+        method: 'DELETE', 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      if (res.ok) {
+        addToast({ message: 'Incident deleted successfully', type: 'success' });
+        router.push('/admin/dashboard');
+      } else {
+        const d = await res.json();
+        addToast({ message: d.error || 'Deletion failed', type: 'error' });
+      }
+    } catch (e) { 
+      addToast({ message: 'System error during deletion', type: 'error' }); 
+    }
+  };
+
   if (!data || !data.incident) return (
     <div className="flex h-screen bg-navy">
       <Sidebar />
@@ -215,6 +234,12 @@ function IncidentDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={deleteIncident}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-all mr-2"
+            >
+              🗑️ Delete
+            </button>
             <SeverityBadge severity={incident.severity} />
             <StatusBadge status={incident.status} />
           </div>
