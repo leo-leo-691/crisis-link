@@ -23,6 +23,12 @@ export async function POST(request) {
 
     if (error) throw error;
 
+    try {
+      const { getIO } = require('@/lib/socket');
+      const io = getIO();
+      if (io) io.emit('incidents:wiped');
+    } catch { /* socket not ready */ }
+
     return NextResponse.json({ 
       success: true, 
       message: 'All incident data has been wiped successfully.' 

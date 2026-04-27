@@ -37,18 +37,25 @@ function StaffContent() {
   useEffect(() => { if (user) load(); }, [user, load]);
 
   const mine = ownFilter
-    ? incidents.filter(i => i.recommended_responder === user?.name)
-    : incidents.filter(i => i.status !== 'resolved');
-  const zoneIncidents = selectedZone ? incidents.filter(i => i.zone === selectedZone && i.status !== 'resolved') : [];
-  const todayCount = incidents.filter((i) => {
+    ? (incidents || []).filter(i => i && i.recommended_responder === user?.name)
+    : (incidents || []).filter(i => i && i.status !== 'resolved');
+  
+  const zoneIncidents = selectedZone 
+    ? (incidents || []).filter(i => i && i.zone === selectedZone && i.status !== 'resolved') 
+    : [];
+
+  const todayCount = (incidents || []).filter((i) => {
+    if (!i?.created_at) return false;
     const created = new Date(i.created_at);
     const now = new Date();
     return created.getFullYear() === now.getFullYear()
       && created.getMonth() === now.getMonth()
       && created.getDate() === now.getDate();
   }).length;
-  const activeCount = incidents.filter(i => i.status !== 'resolved').length;
-  const resolvedWithDuration = incidents.filter(i => i.resolved_at && i.created_at);
+
+  const activeCount = (incidents || []).filter(i => i && i.status !== 'resolved').length;
+  
+  const resolvedWithDuration = (incidents || []).filter(i => i && i.resolved_at && i.created_at);
   const avgResolutionMinutes = resolvedWithDuration.length
     ? Math.round(resolvedWithDuration.reduce((acc, i) => {
         return acc + ((new Date(i.resolved_at).getTime() - new Date(i.created_at).getTime()) / 60000);

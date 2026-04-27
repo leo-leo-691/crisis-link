@@ -72,7 +72,20 @@ export default function DemoAutopilot() {
       return nextRun;
     };
 
-    const completeDemo = () => {
+    const completeDemo = async () => {
+      // Clean up the drill incident from the database
+      const runSnapshot = readRun();
+      if (runSnapshot?.incidentId) {
+        try {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
+          await fetch(`/api/incidents/${runSnapshot.incidentId}`, {
+            method: 'DELETE',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+        } catch (e) {
+          console.warn('[DemoAutopilot] Cleanup failed (non-critical):', e.message);
+        }
+      }
       updateRun({
         active: false,
         phase: 'completed',
@@ -158,7 +171,7 @@ export default function DemoAutopilot() {
 
       if (current.phase === 'resolved') {
         await wait(1000);
-        completeDemo();
+        await completeDemo();
       }
     };
 

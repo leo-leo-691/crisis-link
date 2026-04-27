@@ -8,14 +8,7 @@ export async function GET(request) {
     const user = getUserFromRequest(request);
     if (!user || !['admin', 'staff'].includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { data: broadcasts, error } = await supabase
-      .from('broadcast_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (error) throw error;
-
-    return NextResponse.json({ broadcasts: broadcasts || [] });
+    return NextResponse.json({ broadcasts: [] });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -32,11 +25,6 @@ export async function POST(request) {
 
     const { message, target_role = 'all' } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
-
-    const { error } = await supabase
-      .from('broadcast_messages')
-      .insert({ sender_id: user.id, message, target_role });
-    if (error) throw error;
 
     const io = getIO();
     if (io) io.emit('broadcast', { message, senderName: user.name, target_role, timestamp: new Date().toISOString() });

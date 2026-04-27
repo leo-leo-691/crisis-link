@@ -21,7 +21,11 @@ export default function DemoTriggerPage() {
     setRunning(true);
     setSuccess(false);
     try {
-      await fetch('/api/simulate', { method: 'POST' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
+      await fetch('/api/simulate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setSuccess(true);
     } catch (err) {
       alert("Simulation failed");

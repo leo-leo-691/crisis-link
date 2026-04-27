@@ -28,7 +28,7 @@ export default function CrisisBot({ incidentContext }) {
         body: JSON.stringify({ message: msg, context: incidentContext }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'bot', text: data.reply || data.error, provider: data.provider }]);
+      setMessages(prev => [...prev, { role: 'bot', text: data.reply || data.error }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'bot', text: '⚠️ Unable to reach CrisisBot. Check your connection.' }]);
     } finally {
@@ -64,11 +64,7 @@ export default function CrisisBot({ incidentContext }) {
               }
             `}>
               {m.text}
-              {m.provider && (
-                <span className="block mt-1 text-[10px] text-white/30">
-                  via {m.provider === 'fallback' ? 'Smart Fallback' : m.provider}
-                </span>
-              )}
+            
             </div>
           </div>
         ))}

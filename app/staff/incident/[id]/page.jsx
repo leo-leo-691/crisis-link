@@ -99,14 +99,14 @@ function StaffIncidentDetailContent() {
   const canApplyStatus = (target) => {
     if (!incident) return false;
     if (incident.status === target || incident.status === 'resolved') return false;
-    const allowedMap = {
-      reported: ['acknowledged', 'responding', 'resolved'],
-      acknowledged: ['responding', 'contained', 'resolved'],
-      responding: ['contained', 'resolved'],
-      contained: ['resolved'],
-      resolved: [],
+    // Strict one-step-at-a-time progression
+    const nextStepMap = {
+      reported: 'acknowledged',
+      acknowledged: 'responding',
+      responding: 'contained',
+      contained: 'resolved',
     };
-    return (allowedMap[incident.status] || []).includes(target);
+    return nextStepMap[incident.status] === target;
   };
 
   const handleStatusAction = async (targetStatus) => {
@@ -114,7 +114,6 @@ function StaffIncidentDetailContent() {
     try {
       setUpdatingStatus(targetStatus);
       await updateStatus(id, targetStatus);
-      await fetchIncident(id);
     } catch (error) {
       console.error('Failed to update status', error);
     } finally {
@@ -126,7 +125,6 @@ function StaffIncidentDetailContent() {
     try {
       setTogglingTasks((current) => ({ ...current, [taskId]: true }));
       await toggleTask(id, taskId);
-      await fetchIncident(id);
     } catch (error) {
       console.error('Failed to toggle task', error);
     } finally {
@@ -140,7 +138,6 @@ function StaffIncidentDetailContent() {
       setChatSending(true);
       await sendMessage(id, chatMsg, user?.name || 'Staff');
       setChatMsg('');
-      await fetchIncident(id);
     } catch (error) {
       console.error('Failed to send message', error);
     } finally {
@@ -161,7 +158,6 @@ function StaffIncidentDetailContent() {
       setShowTaskModal(false);
       setTaskTitle('');
       setTaskPriority('medium');
-      await fetchIncident(id);
     } catch (error) {
       console.error('Failed to create task', error);
     } finally {
@@ -183,7 +179,7 @@ function StaffIncidentDetailContent() {
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
-      <main ref={mainRef} className="flex-1 overflow-y-auto bg-grid relative">
+      <main ref={mainRef} className="flex-1 overflow-y-auto bg-grid relative min-w-0">
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, height: '3px',
@@ -194,18 +190,18 @@ function StaffIncidentDetailContent() {
           id="progress-bar"
         />
 
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors">← Back</button>
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors flex-shrink-0">← Back</button>
           {!loadingInitial && incident && (
             <>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0">
                 <TypeIcon type={incident.type} />
-                <div>
-                  <h1 className="font-bold text-white text-base">{incident.id}</h1>
-                  <p className="text-xs text-muted">{incident.zone} · {incident.type}</p>
+                <div className="min-w-0">
+                  <h1 className="font-bold text-white text-sm truncate">{incident.id}</h1>
+                  <p className="text-xs text-muted truncate">{incident.zone} · {incident.type}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto flex-shrink-0">
                 <SeverityBadge severity={incident.severity} />
                 <StatusBadge status={incident.status} />
               </div>
@@ -216,16 +212,16 @@ function StaffIncidentDetailContent() {
         {!loadingInitial && incident && (
           <div className="px-6 pt-4 pb-6 space-y-4">
             <div className="glass p-4 space-y-3">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <p className="text-sm font-semibold text-white">Live Response Controls</p>
                   <p className="text-xs text-muted">Run the incident through acknowledgement, response, containment, and resolution.</p>
                 </div>
                 <button
                   onClick={() => setShowHandoffModal(true)}
-                  className="px-4 py-2 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-sm font-semibold text-white transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-xs font-semibold text-white transition-colors flex-shrink-0"
                 >
-                  Generate Handoff Report
+                  Handoff Report
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -235,7 +231,7 @@ function StaffIncidentDetailContent() {
                     data-action={action.key}
                     onClick={() => handleStatusAction(action.nextStatus)}
                     disabled={!canApplyStatus(action.nextStatus) || updatingStatus === action.nextStatus}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-steelblue/20 border border-steelblue/30 hover:bg-steelblue/35 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                    className="flex-1 min-w-[120px] px-3 py-2 rounded-lg text-xs font-semibold bg-steelblue/20 border border-steelblue/30 hover:bg-steelblue/35 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
                   >
                     {updatingStatus === action.nextStatus ? 'Updating...' : action.label}
                   </button>
@@ -244,13 +240,13 @@ function StaffIncidentDetailContent() {
             </div>
 
             <div className="border-b border-white/10">
-              <div className="flex gap-1 flex-wrap">
+              <div className="flex gap-1 overflow-x-auto scrollbar-none">
                 {['overview', 'monitor', 'tasks', 'comms', 'timeline', 'ai', ...(incident.status === 'resolved' ? ['debrief'] : [])].map((tab) => (
                   <button
                     key={tab}
                     data-tab={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition-colors ${
+                    className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                       activeTab === tab ? 'border-steelblue text-white' : 'border-transparent text-muted hover:text-white'
                     }`}
                   >
@@ -406,7 +402,7 @@ function StaffIncidentDetailContent() {
 
             {activeTab === 'ai' && (
               <div className="space-y-4">
-                <AITriagePanel triage={triage || fallbackTriage(incident)} provider={incident.ai_provider || 'fallback'} />
+                <AITriagePanel triage={triage || fallbackTriage(incident)} />
               </div>
             )}
 

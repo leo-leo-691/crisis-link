@@ -73,10 +73,12 @@ function IncidentDetail() {
   // Realtime updates are handled globally via socketStore.js
 
   const handleStatusChange = async (newStatus) => {
+    if (incident?.status === newStatus || incident?.status === 'resolved') return;
     try {
       setUpdatingStatus(newStatus);
       await updateStatus(id, newStatus);
       addToast({ message: `Status → ${newStatus}`, type: 'success' });
+      await load();
     } catch (e) { addToast({ message: e.message, type: 'error' }); }
     finally { setUpdatingStatus(null); }
   };
@@ -222,21 +224,21 @@ function IncidentDetail() {
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-grid">
+      <main className="flex-1 overflow-y-auto bg-grid min-w-0">
         {/* Header */}
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors">← Back</button>
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors flex-shrink-0">← Back</button>
+          <div className="flex items-center gap-2 min-w-0">
             <TypeIcon type={incident.type} />
-            <div>
-              <h1 className="font-bold text-white text-base">{incident.id}</h1>
-              <p className="text-xs text-muted">{incident.zone} · {incident.type}</p>
+            <div className="min-w-0">
+              <h1 className="font-bold text-white text-sm truncate">{incident.id}</h1>
+              <p className="text-xs text-muted truncate">{incident.zone} · {incident.type}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <button
               onClick={deleteIncident}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-all mr-2"
+              className="px-2 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-all"
             >
               🗑️ Delete
             </button>
@@ -245,28 +247,31 @@ function IncidentDetail() {
           </div>
         </div>
 
-        {/* Status pipeline */}
+        {/* Status pipeline — strictly sequential progression */}
         <div className="px-6 pt-4">
+          <p className="text-[10px] text-muted mb-2 uppercase tracking-wide">Advance Status (One Step at a Time)</p>
           <div className="flex items-center gap-1">
             {STATUS_ORDER.map((s, i) => {
               const past    = i < currentStatusIdx;
               const current = i === currentStatusIdx;
-              const next    = i === currentStatusIdx + 1;
+              const isNextStep = i === currentStatusIdx + 1;
+              const isLocked = incident.status === 'resolved' || current || (!isNextStep && !past);
+              const isUpdating = updatingStatus === s;
               return (
                 <div key={s} className="flex items-center flex-1">
                   <button
-                    onClick={() => next && handleStatusChange(s)}
-                    disabled={!next || incident.status === 'resolved' || updatingStatus === s}
+                    onClick={() => !isLocked && !isUpdating && handleStatusChange(s)}
+                    disabled={isLocked || isUpdating}
                     className={`
                       flex-1 py-1.5 px-2 text-xs font-semibold text-center rounded-lg transition-all capitalize
-                      ${current ? 'bg-steelblue text-white' : ''}
-                      ${past ? 'bg-emerald-500/20 text-emerald-300' : ''}
-                      ${next && !updatingStatus ? 'bg-white/8 text-white hover:bg-steelblue/30 cursor-pointer' : ''}
-                      ${next && updatingStatus ? 'bg-white/8 text-white opacity-50 cursor-not-allowed' : ''}
-                      ${!past && !current && !next ? 'text-muted bg-white/4' : ''}
+                      ${current ? 'bg-steelblue text-white ring-1 ring-steelblue/50' : ''}
+                      ${past ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/35 cursor-pointer' : ''}
+                      ${!current && !past && !isLocked ? 'bg-white/8 text-white hover:bg-steelblue/30 cursor-pointer' : ''}
+                      ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
+                      ${incident.status === 'resolved' ? 'opacity-40 cursor-not-allowed' : ''}
                     `}
                   >
-                    {updatingStatus === s ? '⏳' : past ? '✓' : ''} {s}
+                    {isUpdating ? '⏳' : past ? '✓' : ''} {s}
                   </button>
                   {i < STATUS_ORDER.length - 1 && <div className="w-4 h-0.5 bg-white/10 flex-shrink-0" />}
                 </div>
@@ -276,13 +281,13 @@ function IncidentDetail() {
         </div>
 
         {/* Tabs */}
-        <div className="px-6 pt-4">
-          <div className="flex gap-1 border-b border-white/8 mb-4">
+        <div className="px-4 pt-4">
+          <div className="flex gap-1 border-b border-white/8 mb-4 overflow-x-auto scrollbar-none">
             {['overview', 'tasks', 'comms', 'ai', 'timeline'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-semibold capitalize transition-all border-b-2 ${
+                className={`px-3 py-2 text-sm font-semibold capitalize transition-all border-b-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab ? 'border-steelblue text-white' : 'border-transparent text-muted hover:text-white'
                 }`}
               >
@@ -416,7 +421,7 @@ function IncidentDetail() {
             <div className="space-y-4 fade-in">
               {/* Triage summary */}
               {triage && (
-                <AITriagePanel triage={triage} provider={incident.ai_provider} />
+                <AITriagePanel triage={triage} />
               )}
 
               {/* AI actions */}

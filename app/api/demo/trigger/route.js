@@ -17,6 +17,12 @@ const REPORTERS = ['James Miller', 'Sarah B.', 'Anonymous Guest', 'Room 412', 'R
 // POST /api/demo/trigger — inject a simulated incident for demo autopilot
 export async function POST(request) {
   try {
+    const { getUserFromRequest } = require('@/lib/auth');
+    const user = getUserFromRequest(request);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const supabase = require('@/lib/supabase');
     const { analyzeIncident } = require('@/lib/aiTriage');
     const { getIO } = require('@/lib/socket');

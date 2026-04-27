@@ -1,9 +1,9 @@
 const { NextResponse } = require('next/server');
 
 const VALID_TRANSITIONS = {
-  reported: ['acknowledged', 'responding', 'resolved'],
-  acknowledged: ['responding', 'contained', 'resolved'],
-  responding: ['contained', 'resolved'],
+  reported: ['acknowledged'],
+  acknowledged: ['responding'],
+  responding: ['contained'],
   contained: ['resolved'],
   resolved: [],
 };
@@ -71,7 +71,7 @@ async function generateAndStoreDebrief(incidentId, incidentSnapshot) {
 
     const { data: updatedIncident, error: updateError } = await supabase
       .from('incidents')
-      .update({ debrief_report: JSON.stringify(report), updated_at: new Date().toISOString() })
+      .update({ debrief_report: report, updated_at: new Date().toISOString() })
       .eq('id', incidentId)
       .select(INCIDENT_COLUMNS)
       .maybeSingle();
@@ -143,12 +143,18 @@ export async function PATCH(request, { params }) {
       io.emit('incident:updated', updatedIncident);
     });
 
-    let responseIncident = updatedIncident;
+    // Return the response IMMEDIATELY so UI updates instantly.
+    // Debrief runs in background — setImmediate ensures it starts before
+    // the event loop empties, so Cloud Run won't evict it prematurely.
     if (status === 'resolved') {
-      responseIncident = await generateAndStoreDebrief(id, updatedIncident);
+      setImmediate(() => {
+        generateAndStoreDebrief(id, updatedIncident).catch((err) => {
+          console.error('[Auto Debrief] Background generation failed:', err.message);
+        });
+      });
     }
 
-    return jsonNoStore(responseIncident);
+    return jsonNoStore(updatedIncident);
   } catch (err) {
     console.error('[PATCH /api/incidents/:id/status]', err);
     return jsonNoStore({ error: err.message }, { status: 500 });

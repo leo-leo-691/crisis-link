@@ -40,7 +40,7 @@ function isToday(timestamp) {
 
 function normalizeActiveIncidents(payload) {
   const incidents = Array.isArray(payload) ? payload : [];
-  return incidents.filter((incident) => incident.status !== 'resolved' && !incident.is_drill);
+  return incidents.filter((incident) => incident && incident.status !== 'resolved' && !incident.is_drill);
 }
 
 function ShieldIcon({ size = 52 }) {
@@ -139,8 +139,8 @@ function HomeContent() {
     const loadLiveData = async () => {
       try {
         const [analyticsRes, incidentsRes] = await Promise.all([
-          fetch('/api/analytics/summary', { cache: 'force-cache' }),
-          fetch('/api/incidents/public?limit=3', { cache: 'force-cache' }),
+          fetch('/api/analytics/summary', { cache: 'no-store' }),
+          fetch('/api/incidents/public?limit=3', { cache: 'no-store' }),
         ]);
 
         const analyticsPayload = await analyticsRes.json();
@@ -168,8 +168,8 @@ function HomeContent() {
         });
 
         socketRef.on('incident:new', (incident) => {
-          if (incident?.is_drill) return;
-          setActiveIncidents((current) => [incident, ...current.filter((item) => item.id !== incident.id)].slice(0, 3));
+          if (!incident || incident.is_drill) return;
+          setActiveIncidents((current) => [incident, ...current.filter((item) => item?.id && item.id !== incident.id)].slice(0, 3));
           if (incident?.created_at && isToday(incident.created_at)) {
             setAnalytics((current) => current ? { ...current, totalIncidents: (current.totalIncidents || 0) + 1, activeIncidents: (current.activeIncidents || 0) + 1, todayIncidents: (current.todayIncidents || 0) + 1 } : current);
           }
@@ -178,9 +178,19 @@ function HomeContent() {
         socketRef.on('incident:updated', (incident) => {
           if (!incident || incident.is_drill) return;
           setActiveIncidents((current) => {
-            const next = current.map((item) => item.id === incident.id ? { ...item, ...incident } : item);
+            const next = current.map((item) => item?.id === incident.id ? { ...item, ...incident } : item);
             return normalizeActiveIncidents(next);
           });
+        });
+        
+        socketRef.on('incident:deleted', (deletedId) => {
+          if (!deletedId) return;
+          setActiveIncidents((current) => current.filter((item) => item?.id !== deletedId));
+        });
+
+        socketRef.on('incidents:wiped', () => {
+          setActiveIncidents([]);
+          setAnalytics((current) => current ? { ...current, totalIncidents: 0, activeIncidents: 0, todayIncidents: 0 } : current);
         });
       }).catch((error) => {
         console.error('Failed to subscribe to landing page socket feed:', error);
@@ -286,7 +296,9 @@ function HomeContent() {
     if (activeIncidents.length === 0) {
       return ['SYSTEM ACTIVE', 'ALL CLEAR', 'MONITORING 14 ZONES', 'AI TRIAGE READY'];
     }
-    return activeIncidents.map((incident) => `${String(incident.type || 'incident').toUpperCase()} · ${incident.zone} · ${String(incident.severity || 'active').toUpperCase()}`);
+    return activeIncidents
+      .filter(Boolean)
+      .map((incident) => `${String(incident.type || 'incident').toUpperCase()} · ${incident.zone || 'Unknown'} · ${String(incident.severity || 'active').toUpperCase()}`);
   }, [activeIncidents]);
 
   return (
@@ -351,7 +363,7 @@ function HomeContent() {
 
                 <div className="flex flex-wrap justify-center gap-3 pt-4">
                   {activeIncidents.length > 0 ? (
-                    activeIncidents.slice(0, 3).map((incident) => (
+                    activeIncidents.slice(0, 3).map((incident) => incident?.id && (
                       <span
                         key={incident.id}
                         className="px-4 py-2 rounded-full text-[11px] font-bold tracking-wider border transition-all hover:bg-white/5"
@@ -414,7 +426,7 @@ function HomeContent() {
                 {activeIncidents.length === 0 ? (
                   <p className="text-xs italic text-white/30 text-center py-8">Awaiting incident stream...</p>
                 ) : (
-                  activeIncidents.slice(0, 3).map((incident) => (
+                  activeIncidents.slice(0, 3).map((incident) => incident?.id && (
                     <div key={incident.id} className="relative pl-4 group">
                       <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-white/10 group-hover:bg-red-500 transition-colors" />
                       <div className="flex items-center justify-between gap-3">
@@ -650,31 +662,57 @@ function GuestSOSStrip() {
 function GuestTracker() {
   const router = useRouter();
   const [trackingId, setTrackingId] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [trackError, setTrackError] = useState('');
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!trackingId.trim()) return;
-    router.push(`/sos/confirm/${trackingId.trim()}`);
+    const id = trackingId.trim();
+    if (!id) return;
+    setTrackError('');
+    setChecking(true);
+    try {
+      // Validate the incident ID exists before navigating
+      const res = await fetch(`/api/incidents/public?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+      const data = await res.json();
+      const found = res.ok && (Array.isArray(data?.incidents) ? data.incidents.length > 0 : data?.id);
+      if (!found) {
+        setTrackError('No incident found with that ID. Please check and try again.');
+        return;
+      }
+      router.push(`/sos/confirm/${id}`);
+    } catch {
+      setTrackError('Could not verify tracking ID. Please try again.');
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
-    <form onSubmit={submit} className="w-full py-2.5 px-5 flex flex-col sm:flex-row items-center gap-3 transition-all" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
-      <p className="mono text-[9px] text-white/50 tracking-[0.16em] sm:hidden w-full text-left mb-1">TRACK INCIDENT</p>
-      <input
-        type="text"
-        value={trackingId}
-        onChange={(e) => setTrackingId(e.target.value)}
-        placeholder="Enter Tracking ID..."
-        className="input-glass flex-1 !py-1.5 text-sm w-full"
-        style={{ height: 38 }}
-      />
-      <button
-        type="submit"
-        className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:bg-white/10 w-full sm:w-auto"
-        style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', height: 38 }}
-      >
-        Track Status
-      </button>
+    <form onSubmit={submit} className="w-full py-2.5 px-5 flex flex-col gap-2 transition-all" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
+      <p className="mono text-[9px] text-white/50 tracking-[0.16em]">TRACK INCIDENT</p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={trackingId}
+          onChange={(e) => { setTrackingId(e.target.value); setTrackError(''); }}
+          placeholder="Enter Tracking ID (e.g. INC-20260427-1234)"
+          className="input-glass flex-1 !py-1.5 text-sm"
+          style={{ height: 38 }}
+          disabled={checking}
+        />
+        <button
+          type="submit"
+          disabled={checking || !trackingId.trim()}
+          className="px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all hover:bg-white/10 disabled:opacity-50 whitespace-nowrap"
+          style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', height: 38 }}
+        >
+          {checking ? '⏳ Checking…' : 'Track Status'}
+        </button>
+      </div>
+      {trackError && (
+        <p className="text-xs text-red-400/90" style={{ paddingLeft: 2 }}>{trackError}</p>
+      )}
     </form>
   );
 }

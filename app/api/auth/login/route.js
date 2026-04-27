@@ -14,7 +14,7 @@ export async function POST(request) {
  
     const { data: user, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, password_hash, name, role, zone_assignment, is_active')
       .eq('email', email.toLowerCase().trim())
       .eq('is_active', true)
       .maybeSingle();

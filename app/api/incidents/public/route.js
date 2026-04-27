@@ -6,13 +6,34 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const limit = parseInt(searchParams.get('limit') || '3');
 
-    // Only return non-sensitive fields
+    // Single incident lookup for tracking validation (?id=INC-...)
+    if (id) {
+      const { data: incident, error } = await supabase
+        .from('incidents')
+        .select('id, type, zone, status, created_at, description, recommended_responder')
+        .eq('id', id)
+        .eq('is_drill', false)
+        .maybeSingle();
+      if (error) throw error;
+      const isActive = incident && incident.status !== 'resolved';
+      return NextResponse.json(
+        { 
+          incident, // Provide full object for confirmation page
+          incidents: incident ? [incident] : [], 
+          totalActive: isActive ? 1 : 0 
+        },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+
+    // List active (non-drill) incidents — only non-sensitive fields
     const [{ data: incidents, error: incidentsError }, { count, error: countError }] = await Promise.all([
       supabase
         .from('incidents')
-        .select('id, type, zone, created_at')
+        .select('id, type, zone, created_at, description, severity')
         .eq('is_drill', false)
         .neq('status', 'resolved')
         .order('created_at', { ascending: false })

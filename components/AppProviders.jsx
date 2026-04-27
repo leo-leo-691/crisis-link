@@ -16,7 +16,7 @@ export default function AppProviders({ children }) {
   const reqNotif   = useSocketStore(s => s.requestNotifications);
 
   useEffect(() => {
-    initUI();
+    const cleanupUI = initUI();
     initAuth().then(() => {
       // After auth loaded, init socket with token
       const tok = localStorage.getItem('crisislink_token');
@@ -25,6 +25,7 @@ export default function AppProviders({ children }) {
         reqNotif();
       }
     });
+    return () => { if (typeof cleanupUI === 'function') cleanupUI(); };
   }, []);
 
   // Re‑init socket if token changes

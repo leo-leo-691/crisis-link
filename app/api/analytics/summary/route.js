@@ -13,8 +13,17 @@ function jsonWithPublicCache(payload, init = {}) {
   });
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const referer = request.headers.get('referer');
+    const host = request.headers.get('host');
+    
+    // Very basic check to ensure requests come from the same site (prevent scraping)
+    // Note: referer might be missing in some legitimate edge cases, but for a public dashboard ticker it's acceptable.
+    if (referer && !referer.includes(host) && !referer.includes('localhost') && !referer.includes('crisislink')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 

@@ -6,13 +6,9 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
   const [loading, setLoading] = useState(!Array.isArray(initialZones));
   const [hoveredZone, setHoveredZone] = useState(null);
 
-  useEffect(() => {
-    if (Array.isArray(initialZones)) {
-      setZones(initialZones);
-      setLoading(false);
-      return undefined;
-    }
-
+  // Expose a method to trigger a re-fetch (used by Settings after Add Zone)
+  const fetchZones = () => {
+    setLoading(true);
     fetch('/api/zones')
       .then(r => r.json())
       .then(data => {
@@ -23,7 +19,41 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
         console.error('Failed to load zones:', err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    if (Array.isArray(initialZones)) {
+      setZones(initialZones);
+      setLoading(false);
+      return undefined;
+    }
+    fetchZones();
   }, [initialZones]);
+
+  // Auto-assign grid coordinates to zones that have none (newly created zones)
+  function assignFallbackCoords(zoneList) {
+    const COLS = 4;
+    const CELL_W = 180;
+    const CELL_H = 100;
+    const START_X = 20;
+    const START_Y = 520; // Move below the hardcoded 500px canvas
+    const GAP = 16;
+    let idx = 0;
+    return zoneList.map(zone => {
+      if (zone.map_x != null && zone.map_width != null) return zone;
+      const col = idx % COLS;
+      const row = Math.floor(idx / COLS);
+      idx++;
+      return {
+        ...zone,
+        map_x: START_X + col * (CELL_W + GAP),
+        map_y: START_Y + row * (CELL_H + GAP),
+        map_width: CELL_W,
+        map_height: CELL_H,
+        isFallback: true,
+      };
+    });
+  }
 
   function getZoneSeverity(zoneName) {
     const zoneIncidents = incidents.filter(
@@ -80,14 +110,22 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
     );
   }
 
+  const renderedZones = assignFallbackCoords(zones);
+  
+  // Calculate dynamic height to fit new zones at the bottom
+  const fallbackCount = renderedZones.filter(z => z.isFallback).length;
+  const fallbackRows = Math.ceil(fallbackCount / 4);
+  const extraHeight = fallbackRows > 0 ? (fallbackRows * 116) + 40 : 0;
+  const totalHeight = 500 + extraHeight;
+
   return (
     <div className="w-full h-full relative">
       <svg
-        viewBox="0 0 800 500"
+        viewBox={`0 0 800 ${totalHeight}`}
         className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="800" height="500" fill="#0A0F1E" />
+        <rect width="800" height={totalHeight} fill="#0A0F1E" />
 
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -99,7 +137,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
             />
           </pattern>
         </defs>
-        <rect width="800" height="500" fill="url(#grid)" />
+        <rect width="800" height={totalHeight} fill="url(#grid)" />
 
         <text
           x="400"
@@ -117,7 +155,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
         <text x="20" y="315" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">AMENITIES</text>
         <text x="20" y="435" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">GROUND</text>
 
-        {zones.map((zone) => {
+        {renderedZones.map((zone) => {
           const severity = getZoneSeverity(zone.name);
           const fill = getZoneFill(severity);
           const stroke = getZoneStroke(severity);
@@ -213,7 +251,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
           <g>
             <rect
               x="10"
-              y="470"
+              y={totalHeight - 30}
               width="200"
               height="22"
               fill="rgba(0,0,0,0.8)"
@@ -221,7 +259,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
             />
             <text
               x="20"
-              y="485"
+              y={totalHeight - 15}
               fill="white"
               fontSize="11"
               fontFamily="monospace"

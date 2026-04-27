@@ -26,7 +26,7 @@ export default function IncidentConfirmPage() {
   const fetchIncident = async () => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/incidents/${id}`, { cache: 'no-store' });
+      const res = await fetch(`/api/incidents/public?id=${id}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch incident');
       setIncident(data.incident);

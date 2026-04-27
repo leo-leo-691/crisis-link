@@ -35,12 +35,14 @@ export async function PATCH(request, { params }) {
 
     const { data: existing, error: fetchError } = await supabase
       .from('incident_tasks')
-      .select('id, title, is_complete')
+      .select('id, title, is_complete, incident_id')
       .eq('id', taskId)
-      .eq('incident_id', id)
       .maybeSingle();
     if (fetchError) throw fetchError;
-    if (!existing) return jsonNoStore({ error: 'Not found' }, { status: 404 });
+    // Validate the task belongs to the right incident (case-insensitive)
+    if (!existing || existing.incident_id?.toLowerCase() !== id?.toLowerCase()) {
+      return jsonNoStore({ error: 'Not found' }, { status: 404 });
+    }
 
     const { data: task, error: updateError } = await supabase
       .from('incident_tasks')
