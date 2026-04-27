@@ -32,10 +32,22 @@ export async function PATCH(request, { params }) {
     if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
 
     const { id, taskId } = await params;
+    
+    // Parse body for action if present
+    let action = 'toggle';
+    try {
+      const bodyText = await request.text();
+      if (bodyText) {
+        const body = JSON.parse(bodyText);
+        if (body.action) action = body.action;
+      }
+    } catch (e) {
+      // ignore
+    }
 
     const { data: existing, error: fetchError } = await supabase
       .from('incident_tasks')
-      .select('id, title, is_complete, incident_id')
+      .select('id, title, is_complete, incident_id, assigned_to')
       .eq('id', taskId)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -44,9 +56,20 @@ export async function PATCH(request, { params }) {
       return jsonNoStore({ error: 'Not found' }, { status: 404 });
     }
 
+    let updatePayload = {};
+    let timelineAction = '';
+
+    if (action === 'assign') {
+      updatePayload = { assigned_to: user.id };
+      timelineAction = `Assigned task to self: "${existing.title}"`;
+    } else {
+      updatePayload = { is_complete: !existing.is_complete };
+      timelineAction = `${!existing.is_complete ? 'Completed' : 'Reopened'} task: "${existing.title}"`;
+    }
+
     const { data: task, error: updateError } = await supabase
       .from('incident_tasks')
-      .update({ is_complete: !existing.is_complete })
+      .update(updatePayload)
       .eq('id', taskId)
       .eq('incident_id', id)
       .select('id, incident_id, title, priority, assigned_to, is_complete, created_at')
@@ -56,7 +79,7 @@ export async function PATCH(request, { params }) {
     const { error: timeError } = await supabase.from('incident_timeline').insert({
       incident_id: id,
       actor: user?.name || 'System',
-      action: `${task.is_complete ? 'Completed' : 'Reopened'} task: "${existing.title}"`,
+      action: timelineAction,
       created_at: new Date().toISOString(),
     });
     if (timeError) throw timeError;

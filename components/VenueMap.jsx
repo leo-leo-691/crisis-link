@@ -30,29 +30,75 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
     fetchZones();
   }, [initialZones]);
 
-  // Auto-assign grid coordinates to zones that have none (newly created zones)
-  function assignFallbackCoords(zoneList) {
+  // CATEGORY AUTO-ASSIGNMENT
+  function getCategory(name) {
+    const n = name.toLowerCase();
+    if (n.includes('floor') || n.includes('level') || n.includes('roof')) return 'FLOORS';
+    if (['lobby', 'front desk', 'restaurant', 'kitchen', 'bar', 'lounge', 'parking'].some(k => n.includes(k))) return 'GROUND';
+    return 'AMENITIES';
+  }
+
+  // AUTO-LAYOUT ALGORITHM
+  function generateAutoLayout(zoneList) {
+    const CELL_W = 160;
+    const CELL_H = 90;
+    const GAP_X = 16;
+    const GAP_Y = 16;
+    const START_X = 55;
     const COLS = 4;
-    const CELL_W = 180;
-    const CELL_H = 100;
-    const START_X = 20;
-    const START_Y = 520; // Move below the hardcoded 500px canvas
-    const GAP = 16;
-    let idx = 0;
-    return zoneList.map(zone => {
-      if (zone.map_x != null && zone.map_width != null) return zone;
-      const col = idx % COLS;
-      const row = Math.floor(idx / COLS);
-      idx++;
-      return {
-        ...zone,
-        map_x: START_X + col * (CELL_W + GAP),
-        map_y: START_Y + row * (CELL_H + GAP),
-        map_width: CELL_W,
-        map_height: CELL_H,
-        isFallback: true,
-      };
+
+    // Natural sort so "Floor 10" comes after "Floor 2"
+    const sorted = [...zoneList].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    const groups = {
+      FLOORS: [],
+      AMENITIES: [],
+      GROUND: []
+    };
+
+    sorted.forEach(z => {
+      groups[getCategory(z.name)].push(z);
     });
+
+    let currentY = 50;
+    const renderData = [];
+
+    ['FLOORS', 'AMENITIES', 'GROUND'].forEach(cat => {
+      const items = groups[cat];
+      if (items.length === 0) return;
+
+      const rows = Math.ceil(items.length / COLS);
+      const groupHeight = rows * CELL_H + (rows - 1) * GAP_Y;
+
+      // Add Category Label on the left
+      renderData.push({
+        type: 'label',
+        id: `label-${cat}`,
+        text: cat,
+        x: 20,
+        y: currentY + (groupHeight / 2)
+      });
+
+      items.forEach((zone, idx) => {
+        const col = idx % COLS;
+        const row = Math.floor(idx / COLS);
+        renderData.push({
+          type: 'zone',
+          id: zone.id || zone.name,
+          data: {
+            ...zone,
+            map_x: START_X + col * (CELL_W + GAP_X),
+            map_y: currentY + row * (CELL_H + GAP_Y),
+            map_width: CELL_W,
+            map_height: CELL_H
+          }
+        });
+      });
+
+      currentY += groupHeight + 40; // 40px gap between sections
+    });
+
+    return { renderData, requiredHeight: Math.max(500, currentY + 20) };
   }
 
   function getZoneSeverity(zoneName) {
@@ -110,22 +156,16 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
     );
   }
 
-  const renderedZones = assignFallbackCoords(zones);
-  
-  // Calculate dynamic height to fit new zones at the bottom
-  const fallbackCount = renderedZones.filter(z => z.isFallback).length;
-  const fallbackRows = Math.ceil(fallbackCount / 4);
-  const extraHeight = fallbackRows > 0 ? (fallbackRows * 116) + 40 : 0;
-  const totalHeight = 500 + extraHeight;
+  const { renderData, requiredHeight } = generateAutoLayout(zones);
 
   return (
     <div className="w-full h-full relative">
       <svg
-        viewBox={`0 0 800 ${totalHeight}`}
+        viewBox={`0 0 800 ${requiredHeight}`}
         className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="800" height={totalHeight} fill="#0A0F1E" />
+        <rect width="800" height={requiredHeight} fill="#0A0F1E" />
 
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -137,7 +177,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
             />
           </pattern>
         </defs>
-        <rect width="800" height={totalHeight} fill="url(#grid)" />
+        <rect width="800" height={requiredHeight} fill="url(#grid)" />
 
         <text
           x="400"
@@ -151,107 +191,125 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
           GRAND HOTEL - LIVE FLOOR PLAN
         </text>
 
-        <text x="20" y="175" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">FLOORS</text>
-        <text x="20" y="315" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">AMENITIES</text>
-        <text x="20" y="435" fill="rgba(255,255,255,0.20)" fontSize="8" fontFamily="monospace">GROUND</text>
-
-        {renderedZones.map((zone) => {
-          const severity = getZoneSeverity(zone.name);
-          const fill = getZoneFill(severity);
-          const stroke = getZoneStroke(severity);
-          const activeIncidents = getActiveIncidentsInZone(zone.name);
-          const isHovered = hoveredZone === zone.name;
-          const cx = zone.map_x + zone.map_width / 2;
-          const cy = zone.map_y + zone.map_height / 2;
-
-          return (
-            <g key={zone.id || zone.name}>
-              <rect
-                x={zone.map_x}
-                y={zone.map_y}
-                width={zone.map_width}
-                height={zone.map_height}
-                fill={isHovered ? fill.replace(/[\d.]+\)$/, '0.5)') : fill}
-                stroke={stroke}
-                strokeWidth={severity !== 'none' ? 1.5 : 0.5}
-                rx="6"
-                style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onClick={() => onZoneClick && onZoneClick(zone.name)}
-                onMouseEnter={() => setHoveredZone(zone.name)}
-                onMouseLeave={() => setHoveredZone(null)}
-              />
-
+        {renderData.map((item) => {
+          if (item.type === 'label') {
+            return (
               <text
-                x={cx}
-                y={cy - (activeIncidents.length > 0 ? 8 : 0)}
+                key={item.id}
+                x={item.x}
+                y={item.y}
+                transform={`rotate(-90 ${item.x} ${item.y})`}
                 textAnchor="middle"
-                dominantBaseline="middle"
-                fill="rgba(255,255,255,0.75)"
+                fill="rgba(255,255,255,0.20)"
                 fontSize="10"
                 fontFamily="monospace"
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                letterSpacing="2"
               >
-                {zone.name}
+                {item.text}
               </text>
+            );
+          }
 
-              {activeIncidents.length > 0 && (
+          if (item.type === 'zone') {
+            const zone = item.data;
+            const severity = getZoneSeverity(zone.name);
+            const fill = getZoneFill(severity);
+            const stroke = getZoneStroke(severity);
+            const activeIncidents = getActiveIncidentsInZone(zone.name);
+            const isHovered = hoveredZone === zone.name;
+            const cx = zone.map_x + zone.map_width / 2;
+            const cy = zone.map_y + zone.map_height / 2;
+
+            return (
+              <g key={item.id}>
+                <rect
+                  x={zone.map_x}
+                  y={zone.map_y}
+                  width={zone.map_width}
+                  height={zone.map_height}
+                  fill={isHovered ? fill.replace(/[\d.]+\)$/, '0.5)') : fill}
+                  stroke={stroke}
+                  strokeWidth={severity !== 'none' ? 1.5 : 0.5}
+                  rx="6"
+                  style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  onClick={() => onZoneClick && onZoneClick(zone.name)}
+                  onMouseEnter={() => setHoveredZone(zone.name)}
+                  onMouseLeave={() => setHoveredZone(null)}
+                />
+
                 <text
                   x={cx}
-                  y={cy + 10}
+                  y={cy - (activeIncidents.length > 0 ? 8 : 0)}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill="rgba(230,57,70,0.9)"
-                  fontSize="9"
+                  fill="rgba(255,255,255,0.75)"
+                  fontSize="10"
                   fontFamily="monospace"
-                  fontWeight="bold"
-                  style={{ pointerEvents: 'none' }}
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
-                  {activeIncidents.length} ACTIVE
+                  {zone.name}
                 </text>
-              )}
 
-              {activeIncidents.length > 0 && (
-                <g>
-                  <circle
-                    className="map-pin"
-                    cx={zone.map_x + zone.map_width - 12}
-                    cy={zone.map_y + 12}
-                    r="6"
-                    fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
-                    opacity="0.9"
-                  />
-                  <circle
-                    className="map-pin"
-                    cx={zone.map_x + zone.map_width - 12}
-                    cy={zone.map_y + 12}
-                    r="6"
-                    fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
-                    opacity="0.4"
+                {activeIncidents.length > 0 && (
+                  <text
+                    x={cx}
+                    y={cy + 10}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="rgba(230,57,70,0.9)"
+                    fontSize="9"
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                    style={{ pointerEvents: 'none' }}
                   >
-                    <animate
-                      attributeName="r"
-                      values="6;14;6"
-                      dur="2s"
-                      repeatCount="indefinite"
+                    {activeIncidents.length} ACTIVE
+                  </text>
+                )}
+
+                {activeIncidents.length > 0 && (
+                  <g>
+                    <circle
+                      className="map-pin"
+                      cx={zone.map_x + zone.map_width - 12}
+                      cy={zone.map_y + 12}
+                      r="6"
+                      fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
+                      opacity="0.9"
                     />
-                    <animate
-                      attributeName="opacity"
-                      values="0.4;0;0.4"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                </g>
-              )}
-            </g>
-          );
+                    <circle
+                      className="map-pin"
+                      cx={zone.map_x + zone.map_width - 12}
+                      cy={zone.map_y + 12}
+                      r="6"
+                      fill={severity === 'critical' ? '#E63946' : severity === 'high' ? '#F4A261' : '#FACC15'}
+                      opacity="0.4"
+                    >
+                      <animate
+                        attributeName="r"
+                        values="6;14;6"
+                        dur="2s"
+                        repeatCount="indefinite"
+                      />
+                      <animate
+                        attributeName="opacity"
+                        values="0.4;0;0.4"
+                        dur="2s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                  </g>
+                )}
+              </g>
+            );
+          }
+          return null;
         })}
 
         {hoveredZone && (
           <g>
             <rect
               x="10"
-              y={totalHeight - 30}
+              y={requiredHeight - 30}
               width="200"
               height="22"
               fill="rgba(0,0,0,0.8)"
@@ -259,7 +317,7 @@ export default function VenueMap({ incidents = [], zones: initialZones = null, o
             />
             <text
               x="20"
-              y={totalHeight - 15}
+              y={requiredHeight - 15}
               fill="white"
               fontSize="11"
               fontFamily="monospace"

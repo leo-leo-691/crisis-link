@@ -23,7 +23,7 @@ function IncidentDetail() {
   const router = useRouter();
   const { user, loading } = useAuthStore();
   const token  = useAuthStore(s => s.token);
-  const { fetchIncident, updateStatus, toggleTask, sendMessage } = useIncidentStore();
+  const { fetchIncident, updateStatus, toggleTask, assignTask, sendMessage } = useIncidentStore();
   const joinIncident = useSocketStore(s => s.joinIncident);
   const addToast     = useUIStore(s => s.addToast);
 
@@ -89,6 +89,17 @@ function IncidentDetail() {
       await toggleTask(id, taskId);
     } catch (e) { addToast({ message: e.message, type: 'error' }); }
     finally { setTogglingTasks(prev => ({ ...prev, [taskId]: false })); }
+  };
+
+  const handleAssignTask = async (taskId) => {
+    try {
+      setTogglingTasks((current) => ({ ...current, [taskId]: true }));
+      await assignTask(id, taskId);
+    } catch (error) {
+      addToast({ message: error.message, type: 'error' });
+    } finally {
+      setTogglingTasks((current) => ({ ...current, [taskId]: false }));
+    }
   };
 
   const generateDebrief = async () => {
@@ -226,7 +237,7 @@ function IncidentDetail() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid min-w-0">
         {/* Header */}
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-4 py-3 flex items-center gap-3">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-4 pr-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors flex-shrink-0">← Back</button>
           <div className="flex items-center gap-2 min-w-0">
             <TypeIcon type={incident.type} />
@@ -372,8 +383,24 @@ function IncidentDetail() {
                     disabled={togglingTasks[task.id]}
                     className="w-4 h-4 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className={`text-sm min-w-0 ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
-                  <span className="text-xs text-white/65">{getAssigneeName(task, usersById)}</span>
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div>
+                      <span className={`text-sm min-w-0 ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
+                      <span className="text-[11px] text-white/65 flex items-center gap-2">
+                        {getAssigneeName(task, usersById)}
+                        {!task.assignee_name && !task.assigned_to && !task.is_complete && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); handleAssignTask(task.id); }}
+                            disabled={togglingTasks[task.id]}
+                            className="text-emerald-400 hover:text-emerald-300 underline font-semibold transition-colors disabled:opacity-50"
+                          >
+                            Claim
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  </div>
                   <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${priorityClass(task.priority)}`}>{task.priority || 'medium'}</span>
                 </label>
               ))}

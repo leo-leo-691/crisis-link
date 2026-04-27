@@ -132,6 +132,17 @@ function StaffIncidentDetailContent() {
     }
   };
 
+  const handleAssignTask = async (taskId) => {
+    try {
+      setTogglingTasks((current) => ({ ...current, [taskId]: true }));
+      await assignTask(id, taskId);
+    } catch (error) {
+      console.error('Failed to assign task', error);
+    } finally {
+      setTogglingTasks((current) => ({ ...current, [taskId]: false }));
+    }
+  };
+
   const handleSendChat = async () => {
     if (!chatMsg.trim() || chatSending) return;
     try {
@@ -190,7 +201,7 @@ function StaffIncidentDetailContent() {
           id="progress-bar"
         />
 
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-4 py-3 flex items-center gap-3">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-4 pr-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="text-muted hover:text-white text-sm transition-colors flex-shrink-0">← Back</button>
           {!loadingInitial && incident && (
             <>
@@ -334,11 +345,23 @@ function StaffIncidentDetailContent() {
                         disabled={togglingTasks[task.id]}
                         className="w-4 h-4 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      <div className="flex-1 min-w-0">
-                        <span className={`text-sm block ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
-                        <span className="text-[11px] text-white/45">
-                          {task.assignee_name ? `Assigned to ${task.assignee_name}` : 'Unassigned'}
-                        </span>
+                      <div className="flex-1 min-w-0 flex items-center justify-between">
+                        <div>
+                          <span className={`text-sm block ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
+                          <span className="text-[11px] text-white/45 flex items-center gap-2">
+                            {task.assignee_name ? `Assigned to ${task.assignee_name}` : 'Unassigned'}
+                            {!task.assignee_name && !task.is_complete && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); handleAssignTask(task.id); }}
+                                disabled={togglingTasks[task.id]}
+                                className="text-emerald-400 hover:text-emerald-300 underline font-semibold transition-colors disabled:opacity-50"
+                              >
+                                Claim
+                              </button>
+                            )}
+                          </span>
+                        </div>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${priorityClass(task.priority)}`}>{task.priority || 'medium'}</span>
                     </label>

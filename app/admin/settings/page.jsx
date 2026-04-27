@@ -204,7 +204,7 @@ function SettingsContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid min-w-0">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3">
           <h1 className="font-bold text-white">Settings</h1>
           <p className="text-xs text-muted">System configuration and admin tools</p>
         </div>

@@ -286,7 +286,7 @@ function HomeContent() {
 
   useEffect(() => {
     const handler = (event) => {
-      if (event.key === 'd' || event.key === 'D') startDemo();
+      if ((event.key === 'd' || event.key === 'D') && event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') startDemo();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

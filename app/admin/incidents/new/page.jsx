@@ -155,10 +155,11 @@ function NewIncidentForm() {
                     <div>
                       <label className="block text-xs font-bold text-white/50 mb-1.5 mono">REPORTER NAME</label>
                       <input 
-                        className="input-dark w-full" 
+                        className="input-dark w-full opacity-60 cursor-not-allowed" 
                         placeholder="Staff or Guest Name"
                         value={form.reporter_name} 
-                        onChange={e => set('reporter_name', e.target.value)} 
+                        readOnly
+                        title="Reporter name is automatically securely tied to your login ID"
                       />
                     </div>
                     <div>

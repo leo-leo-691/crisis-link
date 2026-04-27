@@ -249,7 +249,7 @@ export default function Sidebar() {
           but we also expose a floating trigger here for pages that don't have a header */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-40 flex items-center justify-center w-10 h-10 rounded-xl"
+        className="lg:hidden fixed top-3 left-3 z-50 flex items-center justify-center w-10 h-10 rounded-xl"
         style={{ background: 'rgba(5,7,15,0.90)', border: '0.5px solid rgba(255,255,255,0.10)', color: 'rgba(232,234,240,0.70)', backdropFilter: 'blur(12px)' }}
         aria-label="Open menu"
       >

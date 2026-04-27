@@ -99,56 +99,59 @@ function StaffDrillContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3">
           <h1 className="font-bold text-white">Emergency Drill Simulator</h1>
           <p className="text-xs text-muted">Run scenario drills and generate completion reports</p>
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {SCENARIOS.map((scenario) => {
-              const selected = selectedScenario.name === scenario.name;
-              return (
-                <button
-                  key={scenario.name}
-                  onClick={() => setSelectedScenario(scenario)}
-                  className={`glass p-4 text-left transition-all border ${selected ? 'border-red-500 shadow-glow-red' : 'border-white/10 hover:border-white/30'}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{scenario.icon}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-semibold text-white text-sm">{scenario.name}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border ${
-                          scenario.severity === 'critical'
-                            ? 'bg-red-500/15 border-red-500/30 text-red-300'
-                            : scenario.severity === 'high'
-                              ? 'bg-orange-500/15 border-orange-500/30 text-orange-300'
-                              : 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300'
-                        }`}>
-                          {scenario.severity}
-                        </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4 flex flex-col gap-4">
+              {SCENARIOS.map((scenario) => {
+                const selected = selectedScenario.name === scenario.name;
+                return (
+                  <button
+                    key={scenario.name}
+                    onClick={() => setSelectedScenario(scenario)}
+                    className={`glass p-4 text-left transition-all border ${selected ? 'border-red-500 shadow-glow-red' : 'border-white/10 hover:border-white/30'}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{scenario.icon}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-semibold text-white text-sm">{scenario.name}</h3>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border ${
+                            scenario.severity === 'critical'
+                              ? 'bg-red-500/15 border-red-500/30 text-red-300'
+                              : scenario.severity === 'high'
+                                ? 'bg-orange-500/15 border-orange-500/30 text-orange-300'
+                                : 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300'
+                          }`}>
+                            {scenario.severity}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted mt-2">{scenario.description}</p>
                       </div>
-                      <p className="text-xs text-muted mt-2">{scenario.description}</p>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="glass p-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-white font-semibold">Selected: {selectedScenario.name}</p>
-
+                  </button>
+                );
+              })}
             </div>
-            <button
-              onClick={launchDrill}
-              disabled={launching}
-              className="px-5 py-2 rounded-lg bg-emergency/90 hover:bg-emergency text-white text-sm font-bold disabled:opacity-50"
-            >
-              {launching ? 'Launching...' : 'Launch Drill'}
-            </button>
+
+            <div className="lg:col-span-8 flex flex-col gap-6">
+              <div className="glass p-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-white font-semibold">Selected: {selectedScenario.name}</p>
+                </div>
+                <button
+                  onClick={launchDrill}
+                  disabled={launching}
+                  className="px-5 py-2 rounded-lg bg-emergency/90 hover:bg-emergency text-white text-sm font-bold disabled:opacity-50"
+                >
+                  {launching ? 'Launching...' : 'Launch Drill'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {report && (

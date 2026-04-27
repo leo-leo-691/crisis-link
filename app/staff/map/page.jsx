@@ -48,7 +48,7 @@ function StaffMapContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid relative">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-4 flex items-center gap-4">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-4 flex items-center gap-4">
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Staff Venue Map</h1>
             <p className="text-xs text-muted mt-1">Live floor plan with active incident overlays</p>

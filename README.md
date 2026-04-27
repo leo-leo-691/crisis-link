@@ -53,7 +53,7 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | 🤖 **AI Triage Engine** | Gemini 3 Flash Preview classifies severity, generates 8-step SOP, evacuation route, and do-not-do list |
 | 📡 **Real-Time Alerts** | Socket.IO broadcasts incidents instantly to all staff dashboards simultaneously |
 | 🗺️ **Live Venue Map** | SVG floor plan with color-coded severity zones and animated incident pins |
-| ✅ **Task Orchestration** | Dynamic checklists auto-assigned by role, synced in real time across all devices |
+| ✅ **Task Orchestration** | Dynamic checklists auto-assigned by role, synced in real time across all devices. Staff can also claim unassigned SOP tasks. |
 | 💬 **Incident Chat** | Isolated per-incident real-time channel for coordinating responders |
 | 📋 **Audit Timeline** | Every action, status change, and message timestamped and logged immutably |
 | 📊 **Analytics Dashboard** | Historical trends, response times, zone hotspots, and KPI metrics |

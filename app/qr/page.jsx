@@ -88,7 +88,7 @@ export default function QRCodesPage() {
       <div className="flex h-screen bg-navy overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-y-auto bg-grid">
-          <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3">
+          <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3">
             <h1 className="font-bold text-white">QR Code Manager</h1>
             <p className="text-xs text-muted">Generate and print emergency QR codes for each zone</p>
           </div>

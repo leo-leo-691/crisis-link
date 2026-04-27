@@ -19,6 +19,7 @@ function StaffContent() {
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
+  const broadcasts = useSocketStore(s => s.broadcasts);
 
   const [ownFilter, setOwnFilter] = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -66,7 +67,7 @@ function StaffContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid relative">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3 flex items-center gap-4">
           <div>
             <h1 className="font-bold text-white">Staff Dashboard</h1>
             <p className="text-xs text-muted">Hello, {user?.name} · {user?.department}</p>
@@ -88,8 +89,8 @@ function StaffContent() {
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 h-[calc(100vh-72px)]">
-          <section className="space-y-4 min-h-0 overflow-y-auto pr-1">
+        <div className="p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 h-[calc(100vh-72px)] overflow-y-auto xl:overflow-hidden">
+          <section className="space-y-4 min-h-0 xl:overflow-y-auto pr-1">
             {/* Quick-action SOS card */}
             <div className="glass bg-steelblue/5 border-steelblue/20 p-5 flex items-center justify-between">
               <div>
@@ -129,14 +130,16 @@ function StaffContent() {
             )}
           </section>
 
-          <section className="min-h-0 flex flex-col gap-3">
-            <div className="glass p-3 flex-1 min-h-0">
-              <div className="h-full">
-                <VenueMap
-                  zones={zones}
-                  incidents={incidents}
-                  onZoneClick={(zone) => setSelectedZone(zone)}
-                />
+          <section className="min-h-0 flex flex-col gap-4">
+            <div className="glass p-4 lg:p-6 flex-1 min-h-[400px] overflow-hidden">
+              <div className="h-full w-full overflow-x-auto">
+                <div className="min-w-[600px] h-full flex flex-col justify-center">
+                  <VenueMap
+                    zones={zones}
+                    incidents={incidents}
+                    onZoneClick={(zone) => setSelectedZone(zone)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -151,6 +154,22 @@ function StaffContent() {
                 Avg: {avgResolutionMinutes}m
               </span>
             </div>
+
+            {broadcasts?.length > 0 && (
+              <div className="glass p-4 mt-1">
+                <h4 className="font-semibold text-white/80 text-sm mb-3">📢 Recent Broadcasts (Session)</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {broadcasts.map((b, i) => (
+                    <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/5 flex gap-3 text-sm">
+                      <span className="text-white/40 text-xs min-w-16 whitespace-nowrap">
+                        {new Date(b.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-white/90">{b.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </div>
 
