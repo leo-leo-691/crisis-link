@@ -69,13 +69,22 @@ async function generateAndStoreDebrief(incidentId, incidentSnapshot) {
 
     const report = await generateDebriefReport(incidentSnapshot, timeline || [], tasks || [], messages || []);
 
+    const now = new Date().toISOString();
     const { data: updatedIncident, error: updateError } = await supabase
       .from('incidents')
-      .update({ debrief_report: report, updated_at: new Date().toISOString() })
+      .update({ debrief_report: report, updated_at: now })
       .eq('id', incidentId)
       .select(INCIDENT_COLUMNS)
       .maybeSingle();
     if (updateError) throw updateError;
+
+    const { error: timelineError } = await supabase.from('incident_timeline').insert({
+      incident_id: incidentId,
+      actor: 'CrisisLink AI',
+      action: 'AI debrief report generated',
+      created_at: now,
+    });
+    if (timelineError) throw timelineError;
 
     await emitSafely(async (io) => {
       io.emit('incident:updated', updatedIncident);
@@ -147,11 +156,8 @@ export async function PATCH(request, { params }) {
     // Debrief runs in background — setImmediate ensures it starts before
     // the event loop empties, so Cloud Run won't evict it prematurely.
     if (status === 'resolved') {
-      setImmediate(() => {
-        generateAndStoreDebrief(id, updatedIncident).catch((err) => {
-          console.error('[Auto Debrief] Background generation failed:', err.message);
-        });
-      });
+      const finalIncident = await generateAndStoreDebrief(id, updatedIncident);
+      return jsonNoStore(finalIncident);
     }
 
     return jsonNoStore(updatedIncident);

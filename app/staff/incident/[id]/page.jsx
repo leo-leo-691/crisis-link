@@ -93,7 +93,7 @@ function StaffIncidentDetailContent() {
   const messages = data?.messages || [];
   const timeline = data?.timeline || [];
   const triage = typeof incident?.ai_triage === 'string' ? safeParse(incident.ai_triage) : incident?.ai_triage;
-  const debrief = safeParse(incident?.debrief_report);
+  const debrief = normalizeDebriefReport(incident?.debrief_report);
   const debriefReady = incident?.status === 'resolved' && !!debrief;
 
   const handoffText = useMemo(() => incident ? buildHandoffReport(incident, triage, timeline) : '', [incident, triage, timeline]);
@@ -116,6 +116,7 @@ function StaffIncidentDetailContent() {
     try {
       setUpdatingStatus(targetStatus);
       await updateStatus(id, targetStatus);
+      await fetchIncident(id);
       addToast({ message: `Status updated to ${targetStatus}`, type: 'success' });
     } catch (error) {
       addToast({ message: error.message || 'Failed to update status', type: 'error' });
@@ -128,6 +129,7 @@ function StaffIncidentDetailContent() {
     try {
       setTogglingTasks((current) => ({ ...current, [taskId]: true }));
       await toggleTask(id, taskId);
+      await fetchIncident(id);
     } catch (error) {
       addToast({ message: error.message || 'Failed to toggle task', type: 'error' });
     } finally {
@@ -139,6 +141,7 @@ function StaffIncidentDetailContent() {
     try {
       setTogglingTasks((current) => ({ ...current, [taskId]: true }));
       await assignTask(id, taskId);
+      await fetchIncident(id);
       addToast({ message: 'Task claimed successfully', type: 'success' });
     } catch (error) {
       addToast({ message: error.message || 'Failed to claim task', type: 'error' });
@@ -153,6 +156,7 @@ function StaffIncidentDetailContent() {
       setChatSending(true);
       await sendMessage(id, chatMsg, user?.name || 'Staff');
       setChatMsg('');
+      await fetchIncident(id);
     } catch (error) {
       console.error('Failed to send message', error);
     } finally {
@@ -542,6 +546,24 @@ function safeParse(value) {
   } catch {
     return null;
   }
+}
+
+function normalizeDebriefReport(value) {
+  if (!value) return null;
+  if (typeof value === 'object' && !Array.isArray(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const parsed = safeParse(value);
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+
+  return {
+    executive_summary: value,
+    what_went_well: [],
+    areas_for_improvement: [],
+    root_cause_analysis: '',
+    recommendations: [],
+    training_recommendations: [],
+  };
 }
 
 function fallbackTriage(incident) {

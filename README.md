@@ -6,7 +6,7 @@
 > **Google Solution Challenge 2026** · Addressing UN SDG 11 — Sustainable Cities and Communities
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live-Demo-FF4444?style=for-the-badge)](https://crisislink-928472984789.us-central1.run.app)
-[![Video Demo](https://img.shields.io/badge/▶_Watch-Demo-FF0000?style=for-the-badge&logo=youtube)](YOUR_VIDEO_URL_HERE)
+[![Video Demo](https://img.shields.io/badge/Drive_Video-Google_Drive-34A853?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1yctaJev2KHz9wFfkDPg0PUL0ZKcUknpc?usp=drive_link)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 [![Gemini AI](https://img.shields.io/badge/Gemini_3_Flash-Preview-4285F4?style=for-the-badge&logo=google)](https://aistudio.google.com)
@@ -65,14 +65,14 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | ⏱️ **Auto-Escalation** | Unacknowledged incidents auto-escalate to CRITICAL after 90 seconds |
 | 🔴 **Drill Mode** | Simulate emergencies safely with 5 preset scenarios and post-drill reports |
 | 📄 **AI Debrief Report** | Gemini-generated post-incident analysis triggered on incident resolution |
-| 📱 **PWA Offline Support** | Service worker via `next-pwa` — SOS continuity on unstable networks |
+| 📱 **PWA Offline Support** | Service worker + cached assets for SOS continuity on unstable networks |
 | 🔁 **Offline Queue** | Incidents submitted offline sync automatically when connection restores |
 | 🔍 **Guest Tracker** | Guests can monitor their incident status in real-time using a unique Tracking ID |
 | 📲 **QR Code Access** | Per-zone QR codes pre-fill the SOS form — scan and report in one tap |
 | 🎬 **Demo Autopilot** | Press `D` on the landing page to watch a fully automated live demonstration |
 | 🛡️ **Smart Fallback** | Hybrid response system: switches to keyword-based SOPs if AI is unreachable |
 | 📢 **Broadcast System** | Admins send instant one-to-many alerts to all connected staff |
-| 🛡️ **Cloud Observability** | Integrated Google Cloud Logging for enterprise security auditing |
+| 🛡️ **Cloud Observability** | Optional Google Cloud Logging when service-account credentials are configured |
 | 📂 **Portable Audit Logs** | Export currently filtered incidents to machine-readable JSON for legal review |
 
 ---
@@ -172,10 +172,10 @@ Powered by **Google Gemini 3 Flash Preview**, it triages incidents in **under 2 
 | **Charts** | Recharts | Analytics visualizations |
 | **QR Codes** | qrcode.react | Zone-based guest access and printable links |
 | **Icons** | Lucide React | Consistent icon system |
-| **PWA** | next-pwa | Offline support and installability |
+| **PWA** | Service worker + Workbox runtime caching | Offline support and installability |
 | **Server** | Custom Node.js | Next.js + Socket.IO on same port |
 | **Deployment** | Docker + Google Cloud Run | Containerized, scalable deployment |
-| **Observability** | Google Cloud Logging | Enterprise-grade incident and security auditing |
+| **Observability** | Google Cloud Logging (optional) | Enterprise-grade incident and security auditing |
 
 ---
 
@@ -210,6 +210,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GEMINI_API_KEY=your_gemini_api_key
 JWT_SECRET=any_random_string_minimum_32_characters
 NODE_ENV=development
+# Optional: enable Google Cloud Logging locally only if you have a service account JSON
+# GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 ```
 
 ```bash
@@ -245,32 +247,33 @@ npm run dev
 ### Landing Page
 > Command Glass design with live system status, animated hero, and role-based entry cards
 
-`[Add screenshot here]`
+![Landing](public/landing.png)
 
 ### Guest SOS Portal
 > High-contrast emergency reporting interface — no login required, voice-to-text enabled
 
-`[Add screenshot here]`
+![SOS](public/sos.png)
 
-### Staff Command Dashboard
+### Admin Command Dashboard
 > Live incident feed with SVG venue map, severity-colored zones, and real-time socket updates
 
-`[Add screenshot here]`
+![Dashboard](public/admin.png)
+
 
 ### Incident Detail with AI Triage
 > Full AI triage panel showing severity, confidence meter, 8-step SOP, evacuation route
 
-`[Add screenshot here]`
+![Triage](public/triage.png)
 
 ### Admin Analytics
 > KPI cards, incident trends, zone hotspots, and response time analytics
 
-`[Add screenshot here]`
+![Analytics](public/analytics.png)
 
 ### Drill Mode
 > Safe simulation environment with 5 preset scenarios and post-drill performance reports
 
-`[Add screenshot here]`
+![Drill](public/drill.png)
 
 ---
 
@@ -320,18 +323,23 @@ docker run -p 3000:3000 \
 ### Google Cloud Run
 
 ```bash
-# Build and deploy
-npm run build
-node server.js
-
-# Or deploy directly via gcloud
-gcloud run deploy crisislink \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --memory 512Mi \
-  --min-instances 1
+# This repo deploys via Cloud Build, not plain `gcloud run deploy --source .`
+# `.env` is ignored by `.gcloudignore`, so pass values explicitly as substitutions.
+gcloud builds submit . \
+  --config cloudbuild.yaml \
+  --substitutions \
+_SERVICE_NAME=crisislink,\
+_REGION=us-central1,\
+_NEXT_PUBLIC_SUPABASE_URL=your_supabase_url,\
+_NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key,\
+_SUPABASE_URL=your_supabase_url,\
+_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key,\
+_GEMINI_API_KEY=your_gemini_api_key,\
+_JWT_SECRET=your_jwt_secret
 ```
+
+If you want Google Cloud Logging in Cloud Run, also configure `GOOGLE_APPLICATION_CREDENTIALS`
+or attach a service account with the required logging permissions.
 
 ---
 
@@ -396,6 +404,6 @@ MIT License — see [LICENSE](LICENSE) for details.
   <strong>🚨 Built for Google Solution Challenge 2026</strong><br/>
   <em>Making hospitality spaces safer, one alert at a time.</em><br/><br/>
   <a href="https://crisislink-928472984789.us-central1.run.app">🌐 Live Demo</a> ·
-  <a href="YOUR_VIDEO_URL_HERE">▶ Watch Demo</a> ·
+  <a href="https://drive.google.com/drive/folders/1yctaJev2KHz9wFfkDPg0PUL0ZKcUknpc?usp=drive_link">🎥 Drive Video</a> ·
   <a href="https://github.com/leo-leo-691/crisis-link/issues">🐛 Report Bug</a>
 </div>

@@ -31,7 +31,15 @@ export async function POST(request, { params }) {
 
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const reportMarkdown = await generateDebrief(incident, timeline || [], tasks || [], messages || []);
+    const report = await generateDebrief(incident, timeline || [], tasks || [], messages || []);
+
+    const { data: updatedIncident, error: updateError } = await supabase
+      .from('incidents')
+      .update({ debrief_report: report, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, debrief_report, updated_at')
+      .maybeSingle();
+    if (updateError) throw updateError;
 
     // Timeline entry
     const { error: insertError } = await supabase.from('incident_timeline').insert({
@@ -42,7 +50,15 @@ export async function POST(request, { params }) {
     });
     if (insertError) throw insertError;
 
-    return NextResponse.json({ report: reportMarkdown, incident_id: id }, { headers: { 'Cache-Control': 'no-store' } });
+    try {
+      const { getIO } = require('@/lib/socket');
+      const io = getIO();
+      if (io && updatedIncident) io.emit('incident:updated', updatedIncident);
+    } catch (socketError) {
+      console.error('[POST /api/incidents/:id/debrief] Socket emit failed:', socketError);
+    }
+
+    return NextResponse.json({ report, incident_id: id, incident: updatedIncident }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[POST /api/incidents/:id/debrief]', err);
     return NextResponse.json({ error: err.message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
