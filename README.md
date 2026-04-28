@@ -252,7 +252,7 @@ npm run dev
 ### Guest SOS Portal
 > High-contrast emergency reporting interface — no login required, voice-to-text enabled
 
-`crisislink/public/Screenshot 2026-04-28 212259.png`
+![Guest SOS Portal](public/Screenshot_2026-04-28_212259.png)
 
 ### Admin Command Dashboard
 > Live incident feed with SVG venue map, severity-colored zones, and real-time socket updates
