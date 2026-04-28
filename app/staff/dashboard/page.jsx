@@ -89,7 +89,7 @@ function StaffContent() {
           </div>
         </div>
 
-        <div className="p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 h-[calc(100vh-72px)] overflow-y-auto xl:overflow-hidden">
+        <div className="p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-[calc(100vh-72px)] xl:overflow-hidden">
           <section className="space-y-4 min-h-0 xl:overflow-y-auto pr-1">
             {/* Quick-action SOS card */}
             <div className="glass bg-steelblue/5 border-steelblue/20 p-5 flex items-center justify-between">
@@ -131,7 +131,7 @@ function StaffContent() {
           </section>
 
           <section className="min-h-0 flex flex-col gap-4">
-            <div className="glass p-4 lg:p-6 flex-1 min-h-[400px] overflow-hidden">
+            <div className="hidden xl:flex glass p-4 lg:p-6 flex-1 min-h-[400px] overflow-hidden">
               <div className="h-full w-full overflow-x-auto">
                 <div className="min-w-[600px] h-full flex flex-col justify-center">
                   <VenueMap
@@ -143,16 +143,19 @@ function StaffContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Today: {todayCount}
-              </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Active: {activeCount}
-              </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Avg: {avgResolutionMinutes}m
-              </span>
+            <div className="mt-auto grid grid-cols-2 sm:flex sm:items-center gap-2 pt-2">
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Today</span>
+                <span className="text-sm font-bold text-white">{todayCount}</span>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Active</span>
+                <span className="text-sm font-bold text-white">{activeCount}</span>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2 col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Average</span>
+                <span className="text-sm font-bold text-white">{avgResolutionMinutes}m <span className="text-[10px] font-normal text-muted">res.</span></span>
+              </div>
             </div>
 
             {broadcasts?.length > 0 && (

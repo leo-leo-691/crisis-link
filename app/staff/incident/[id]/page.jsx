@@ -11,6 +11,7 @@ import AITriagePanel from '@/components/AITriagePanel';
 import useAuthStore from '@/lib/stores/authStore';
 import useIncidentStore from '@/lib/stores/incidentStore';
 import useSocketStore from '@/lib/stores/socketStore';
+import useUIStore from '@/lib/stores/uiStore';
 
 const STATUS_ACTIONS = [
   { key: 'acknowledge', label: 'Acknowledge', nextStatus: 'acknowledged' },
@@ -31,8 +32,9 @@ function StaffIncidentDetailContent() {
   const { user, loading } = useAuthStore();
   const router = useRouter();
   const { id } = useParams();
-  const { fetchIncident, updateStatus, toggleTask, sendMessage, addTask } = useIncidentStore();
+  const { fetchIncident, updateStatus, toggleTask, assignTask, sendMessage, addTask } = useIncidentStore();
   const joinIncident = useSocketStore((s) => s.joinIncident);
+  const addToast = useUIStore((s) => s.addToast);
   const data = useIncidentStore((s) => s.activeIncident);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -114,8 +116,9 @@ function StaffIncidentDetailContent() {
     try {
       setUpdatingStatus(targetStatus);
       await updateStatus(id, targetStatus);
+      addToast({ message: `Status updated to ${targetStatus}`, type: 'success' });
     } catch (error) {
-      console.error('Failed to update status', error);
+      addToast({ message: error.message || 'Failed to update status', type: 'error' });
     } finally {
       setUpdatingStatus('');
     }
@@ -126,7 +129,7 @@ function StaffIncidentDetailContent() {
       setTogglingTasks((current) => ({ ...current, [taskId]: true }));
       await toggleTask(id, taskId);
     } catch (error) {
-      console.error('Failed to toggle task', error);
+      addToast({ message: error.message || 'Failed to toggle task', type: 'error' });
     } finally {
       setTogglingTasks((current) => ({ ...current, [taskId]: false }));
     }
@@ -136,8 +139,9 @@ function StaffIncidentDetailContent() {
     try {
       setTogglingTasks((current) => ({ ...current, [taskId]: true }));
       await assignTask(id, taskId);
+      addToast({ message: 'Task claimed successfully', type: 'success' });
     } catch (error) {
-      console.error('Failed to assign task', error);
+      addToast({ message: error.message || 'Failed to claim task', type: 'error' });
     } finally {
       setTogglingTasks((current) => ({ ...current, [taskId]: false }));
     }
@@ -349,8 +353,8 @@ function StaffIncidentDetailContent() {
                         <div>
                           <span className={`text-sm block ${task.is_complete ? 'line-through text-muted' : 'text-white/90'}`}>{task.title}</span>
                           <span className="text-[11px] text-white/45 flex items-center gap-2">
-                            {task.assignee_name ? `Assigned to ${task.assignee_name}` : 'Unassigned'}
-                            {!task.assignee_name && !task.is_complete && (
+                            {task.assignee_name ? `Assigned to ${task.assignee_name}` : (task.assigned_to === user?.id) ? 'Assigned to you' : task.assigned_to ? 'Assigned' : 'Unassigned'}
+                            {!(task.assignee_name || task.assigned_to) && !task.is_complete && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); handleAssignTask(task.id); }}

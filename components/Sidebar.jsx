@@ -30,7 +30,8 @@ const NAV_ADMIN = [
 const NAV_STAFF = [
   { href: '/staff/dashboard', icon: '◼', emoji: '📊', label: 'Dashboard' },
   { href: '/staff/incidents', icon: '!', emoji: '🚨', label: 'Incidents' },
-  { href: '/staff/drill', icon: '*', emoji: '🧪', label: 'Drill' },
+  { href: '/staff/map',       icon: '⬡', emoji: '🗺️', label: 'Venue Map' },
+  { href: '/staff/drill',     icon: '*', emoji: '🧪', label: 'Drill' },
 ];
 
 /* ── Mobile hamburger trigger (exported for use in page headers) ── */

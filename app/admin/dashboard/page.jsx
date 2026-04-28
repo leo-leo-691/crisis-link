@@ -32,7 +32,7 @@ function StatCard({ label, value, icon, sub, accentColor = '#E8EAF0', borderColo
           </span>
           <span
             className="font-black count-flip leading-none"
-            style={{ fontSize: 34, color: accentColor }}
+            style={{ fontSize: 'clamp(24px, 5vw, 34px)', color: accentColor }}
           >
             {value ?? '—'}
           </span>
@@ -297,7 +297,7 @@ function DashboardContent() {
           {/* Stats */}
           <div>
             <SectionLabel>— COMMAND OVERVIEW</SectionLabel>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
                 label="Active Incidents"
                 value={activeInc.length}

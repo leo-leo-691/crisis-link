@@ -224,7 +224,7 @@ function IncidentsListContent() {
                 <p className="text-white/40 max-w-sm mx-auto">No incidents match your current filtering criteria. Try adjusting your search or filters.</p>
               </div>
             ) : (
-              <div className="grid gap-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredIncidents.map((inc, idx) => (
                   <IncidentCard
                     key={inc.id}
