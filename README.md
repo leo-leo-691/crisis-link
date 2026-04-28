@@ -247,32 +247,32 @@ npm run dev
 ### Landing Page
 > Command Glass design with live system status, animated hero, and role-based entry cards
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212139.png`
+`crisislink/public/Screenshot 2026-04-28 212139.png`
 
 ### Guest SOS Portal
 > High-contrast emergency reporting interface — no login required, voice-to-text enabled
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212259.png`
+`crisislink/public/Screenshot 2026-04-28 212259.png`
 
 ### Admin Command Dashboard
 > Live incident feed with SVG venue map, severity-colored zones, and real-time socket updates
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212355.png`
+`crisislink/public/Screenshot 2026-04-28 212355.png`
 
 ### Incident Detail with AI Triage
 > Full AI triage panel showing severity, confidence meter, 8-step SOP, evacuation route
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212715.png`
+`crisislink/public/Screenshot 2026-04-28 212715.png`
 
 ### Admin Analytics
 > KPI cards, incident trends, zone hotspots, and response time analytics
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212740.png`
+`crisislink/public/Screenshot 2026-04-28 212740.png`
 
 ### Drill Mode
 > Safe simulation environment with 5 preset scenarios and post-drill performance reports
 
-`c:\Users\arind\OneDrive\Pictures\Screenshots\Screenshot 2026-04-28 212824.png`
+`crisislink/public/Screenshot 2026-04-28 212824.png`
 
 ---
 
