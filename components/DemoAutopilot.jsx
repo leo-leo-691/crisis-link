@@ -36,7 +36,7 @@ async function clickWhenReady(selector, timeoutMs = 8000) {
       element.click();
       return true;
     }
-    await wait(200);
+    await wait(100);
   }
   return false;
 }
@@ -56,7 +56,7 @@ export default function DemoAutopilot() {
   useEffect(() => {
     const syncRun = () => setRun(readRun());
     syncRun();
-    const interval = window.setInterval(syncRun, 500);
+    const interval = window.setInterval(syncRun, 200);
     return () => window.clearInterval(interval);
   }, [pathname]);
 
@@ -98,7 +98,7 @@ export default function DemoAutopilot() {
       if (!current?.active || cancelled) return;
 
       if (pathname === '/staff/dashboard' && current.phase === 'created') {
-        await wait(3000);
+        await wait(500);
         if (cancelled) return;
         updateRun({ phase: 'incident-page' });
         router.push(`/staff/incident/${current.incidentId}`);
@@ -116,7 +116,7 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'acknowledged') {
-        await wait(3000);
+        await wait(500);
         const started = await clickWhenReady('[data-action="start-response"]');
         if (started) {
           updateRun({ phase: 'responding' });
@@ -125,9 +125,9 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'responding') {
-        await wait(2000);
+        await wait(350);
         await clickWhenReady('[data-tab="tasks"]');
-        await wait(400);
+        await wait(125);
         const checked = await clickWhenReady('[data-task-checkbox="primary"]');
         if (checked) {
           updateRun({ phase: 'task-complete' });
@@ -136,14 +136,14 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'task-complete') {
-        await wait(2000);
+        await wait(350);
         await clickWhenReady('[data-tab="comms"]');
-        await wait(400);
+        await wait(125);
         const input = document.querySelector('[data-chat-input="incident"]');
         if (input) {
           setInputValue(input, 'Team on scene situation assessed');
         }
-        await wait(400);
+        await wait(100);
         const sent = await clickWhenReady('[data-action="send-chat"]');
         if (sent) {
           updateRun({ phase: 'message-sent' });
@@ -152,7 +152,7 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'message-sent') {
-        await wait(3000);
+        await wait(500);
         const contained = await clickWhenReady('[data-action="contained"]');
         if (contained) {
           updateRun({ phase: 'contained' });
@@ -161,7 +161,7 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'contained') {
-        await wait(2000);
+        await wait(350);
         const resolved = await clickWhenReady('[data-action="resolve"]');
         if (resolved) {
           updateRun({ phase: 'resolved' });
@@ -170,7 +170,7 @@ export default function DemoAutopilot() {
       }
 
       if (current.phase === 'resolved') {
-        await wait(1000);
+        await wait(250);
         await completeDemo();
       }
     };
@@ -183,6 +183,10 @@ export default function DemoAutopilot() {
   }, [pathname, router, run?.active, run?.incidentId, run?.phase]);
 
   const showOverlay = useMemo(() => run?.phase === 'completed', [run?.phase]);
+  const demoDurationSeconds = useMemo(() => {
+    if (!run?.startedAt || !run?.completedAt) return null;
+    return Math.max(1, Math.round((run.completedAt - run.startedAt) / 1000));
+  }, [run?.completedAt, run?.startedAt]);
 
   if (!showOverlay) return null;
 
@@ -190,7 +194,7 @@ export default function DemoAutopilot() {
     <div className="fixed inset-0 z-[10000] bg-green-900/70 flex items-center justify-center p-4">
       <div className="bg-green-900/80 border border-green-400/40 rounded-2xl p-8 text-center max-w-xl w-full">
         <p className="text-2xl font-bold text-green-100">
-          {'\u2705'} Demo Complete {'\u2014'} CrisisLink resolved the incident in 23 seconds
+          {'\u2705'} Demo Complete {'\u2014'} CrisisLink resolved the incident in {demoDurationSeconds || 'a few'} seconds
         </p>
         <button
           onClick={() => {

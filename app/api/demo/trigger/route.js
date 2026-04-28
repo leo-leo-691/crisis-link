@@ -14,6 +14,41 @@ const DESCRIPTIONS = {
 };
 const REPORTERS = ['James Miller', 'Sarah B.', 'Anonymous Guest', 'Room 412', 'Restaurant Staff'];
 
+function buildDemoTriage(type, zone, description, SOP_TASKS, getMockAIResponse) {
+  const mock = getMockAIResponse(`${type} ${zone} ${description}`);
+  const severity = String(mock?.severity || 'high').toLowerCase();
+  const taskTitles = (SOP_TASKS[type] || SOP_TASKS.other || []).slice(0, 8);
+
+  return {
+    provider: 'mock',
+    result: {
+      severity,
+      confidence: mock?.confidence || 88,
+      brief_summary: `Simulated ${type} incident in ${zone}.`,
+      estimated_response_time_minutes: severity === 'critical' ? 3 : severity === 'high' ? 5 : 7,
+      suggested_staff_roles: ['Security', 'First Aid', 'Manager'],
+      recommended_actions: (mock?.actions || [
+        'Assess the scene immediately',
+        'Notify the on-duty manager',
+        'Coordinate responders and secure the area',
+      ]).slice(0, 5),
+      sop: taskTitles.map((title, index) => ({
+        step: index + 1,
+        title,
+        instruction: title,
+        responsible_role: index < 2 ? 'Security' : index < 5 ? 'First Aid' : 'Manager',
+        time_limit_minutes: Math.min(8, index + 1),
+      })),
+      evacuation_route: mock?.evacuation || 'Use the nearest marked emergency exit and proceed to the assembly point at the main car park.',
+      do_not_do: [
+        'Do not panic guests with unverified information.',
+        'Do not enter an unsafe area without backup.',
+        'Do not delay escalation if conditions worsen.',
+      ],
+    },
+  };
+}
+
 // POST /api/demo/trigger — inject a simulated incident for demo autopilot
 export async function POST(request) {
   try {
@@ -24,9 +59,9 @@ export async function POST(request) {
     }
 
     const supabase = require('@/lib/supabase');
-    const { analyzeIncident } = require('@/lib/aiTriage');
     const { getIO } = require('@/lib/socket');
     const { SOP_TASKS } = require('@/lib/sopTasks');
+    const { getMockAIResponse } = require('@/lib/mockAI');
 
     const type     = INCIDENT_TYPES[Math.floor(Math.random() * INCIDENT_TYPES.length)];
     const zone     = ZONES[Math.floor(Math.random() * ZONES.length)];
@@ -41,7 +76,7 @@ export async function POST(request) {
     const id = `DEMO-${date}-${rand}`;
     const now = new Date().toISOString();
 
-    const { result: triage, provider } = await analyzeIncident(type, zone, desc);
+    const { result: triage, provider } = buildDemoTriage(type, zone, desc, SOP_TASKS, getMockAIResponse);
 
     const { data: incident, error: incError } = await supabase
       .from('incidents')

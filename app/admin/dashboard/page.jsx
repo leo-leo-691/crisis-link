@@ -123,21 +123,21 @@ function DashboardContent() {
   const triggerDemo = async () => {
     setDemoing(true);
     try {
-      addToast({ message: `Phase 1: Intercepting SOS...`, type: 'info' });
-      await new Promise(r => setTimeout(r, 1000));
-      
-      addToast({ message: `Phase 2: AI Triage Analyzing...`, type: 'info' });
-      await new Promise(r => setTimeout(r, 1000));
+      addToast({ message: 'Launching demo incident...', type: 'info' });
 
-      const res = await fetch('/api/demo/trigger', { method: 'POST' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
+      const res = await fetch('/api/demo/trigger', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
+      if (!res.ok || !data?.incident?.id) {
+        throw new Error(data?.error || 'Failed to generate demo incident');
+      }
       
-      addToast({ message: `Phase 3: Critical Alert Dispatched!`, type: 'success' });
-      
-      setTimeout(() => {
-        router.push(`/admin/incidents/${data.incident.id}`);
-      }, 1500);
-    } catch (e) { addToast({ message: 'Demo trigger failed', type: 'error' }); }
+      addToast({ message: 'Demo incident ready', type: 'success' });
+      router.push(`/admin/incidents/${data.incident.id}`);
+    } catch (e) { addToast({ message: e.message || 'Demo trigger failed', type: 'error' }); }
     finally { setDemoing(false); }
   };
 

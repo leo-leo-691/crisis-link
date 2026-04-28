@@ -55,7 +55,7 @@ function StaffIncidentDetailContent() {
       router.push('/');
       return;
     }
-    if (user.role !== 'staff' && user.role !== 'admin') {
+    if (!['staff', 'manager', 'admin'].includes(user.role)) {
       router.push('/');
     }
   }, [loading, user, router]);

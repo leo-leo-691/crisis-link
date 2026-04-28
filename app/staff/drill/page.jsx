@@ -31,7 +31,7 @@ function StaffDrillContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
+    if (!['manager', 'admin'].includes(user.role)) { router.push('/'); }
   }, [loading, user, router]);
 
   useEffect(() => {

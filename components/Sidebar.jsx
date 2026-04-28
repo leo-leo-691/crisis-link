@@ -25,6 +25,7 @@ const NAV_ADMIN = [
   { href: '/admin/map',       icon: '⬡',  emoji: '🗺️',  label: 'Venue Map' },
   { href: '/admin/analytics', icon: '▲',  emoji: '📈', label: 'Analytics' },
   { href: '/admin/settings',  icon: '⚙',  emoji: '⚙️',  label: 'Settings' },
+  { href: '/staff/drill',     icon: '*',  emoji: '🧪', label: 'Drill' },
   { href: '/qr',              icon: '#',  emoji: '📱', label: 'QR Codes' },
 ];
 const NAV_STAFF = [
@@ -64,7 +65,9 @@ export default function Sidebar() {
   const incidents  = useIncidentStore(s => s.incidents);
 
   const activeCount = incidents.filter(i => i.status !== 'resolved').length;
-  const nav = user?.role === 'admin' ? NAV_ADMIN : NAV_STAFF;
+  const canAccessDrill = user?.role === 'admin' || user?.role === 'manager';
+  const baseNav = user?.role === 'admin' ? NAV_ADMIN : NAV_STAFF;
+  const nav = baseNav.filter((item) => item.label !== 'Drill' || canAccessDrill);
   const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??';
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/');

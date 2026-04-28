@@ -33,7 +33,7 @@ function NewIncidentForm() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); return; }
+    if (!['staff', 'manager', 'admin'].includes(user.role)) { router.push('/'); return; }
     if (user) setForm(fp => ({ ...fp, reporter_name: user.name }));
   }, [authLoading, user, router]);
 

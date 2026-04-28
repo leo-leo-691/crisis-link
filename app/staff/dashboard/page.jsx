@@ -27,7 +27,7 @@ function StaffContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
+    if (!['staff', 'manager', 'admin'].includes(user.role)) { router.push('/'); }
   }, [loading, user, router]);
 
   const load = useCallback(async () => {
