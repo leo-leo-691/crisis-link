@@ -52,7 +52,24 @@ export async function GET(request, { params }) {
       .eq('incident_id', id)
       .order('id', { ascending: true });
     if (error) throw error;
-    const enrichedTasks = await Promise.all((tasks || []).map((task) => attachAssigneeName(supabase, task)));
+
+    // Batch assignee lookup — one query for all assignees, not one per task
+    const assigneeIds = [...new Set((tasks || []).map(t => t.assigned_to).filter(Boolean))];
+    let assigneeMap = new Map();
+    if (assigneeIds.length) {
+      const { data: assignees, error: assigneeError } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', assigneeIds);
+      if (assigneeError) throw assigneeError;
+      assigneeMap = new Map((assignees || []).map(a => [a.id, a.name]));
+    }
+
+    const enrichedTasks = (tasks || []).map(task => ({
+      ...task,
+      assignee_name: task.assigned_to ? assigneeMap.get(task.assigned_to) || null : null,
+    }));
+
     return jsonNoStore({ tasks: enrichedTasks });
   } catch (err) {
     return jsonNoStore({ error: err.message }, { status: 500 });

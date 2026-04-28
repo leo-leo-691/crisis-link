@@ -15,7 +15,8 @@ export async function GET() {
       },
     });
   } catch (e) {
-    return NextResponse.json([], { status: 500 });
+    console.error('[GET /api/zones]', e);
+    return NextResponse.json({ error: 'Failed to fetch zones', details: e.message }, { status: 500 });
   }
 }
 

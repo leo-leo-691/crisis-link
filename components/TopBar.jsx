@@ -46,7 +46,7 @@ export default function TopBar() {
 
   return (
     <header
-      className="topbar flex items-center px-5 gap-4"
+      className="topbar flex items-center pl-14 pr-5 lg:px-5 gap-4"
       style={{ position: 'sticky', top: 0, zIndex: 40 }}
     >
       {/* Breadcrumb */}

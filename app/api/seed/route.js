@@ -21,7 +21,7 @@ const DEFAULT_ZONES = [
 
 const DEMO_USERS = [
   { email: 'admin@grandhotel.com', name: 'Crisis Admin', role: 'admin', zone_assignment: 'Lobby' },
-  { email: 'manager@grandhotel.com', name: 'Duty Manager', role: 'staff', zone_assignment: 'Front Desk' },
+  { email: 'manager@grandhotel.com', name: 'Duty Manager', role: 'manager', zone_assignment: 'Front Desk' },
   { email: 'staff@grandhotel.com', name: 'Response Staff', role: 'staff', zone_assignment: 'Restaurant' },
   { email: 'security@grandhotel.com', name: 'Marcus Rivera', role: 'staff', zone_assignment: 'Parking' },
   { email: 'frontdesk@grandhotel.com', name: 'Priya Sharma', role: 'staff', zone_assignment: 'Lobby' },

@@ -41,6 +41,9 @@ export async function GET(request, { params }) {
     const supabase = require('@/lib/supabase');
     const { id } = await params;
 
+    const user = getUserFromRequest(request);
+    if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
+
     const [
       { data: incident, error: incError },
       { data: tasks, error: tasksError },
@@ -49,8 +52,8 @@ export async function GET(request, { params }) {
     ] = await Promise.all([
       supabase.from('incidents').select(INCIDENT_COLUMNS).eq('id', id).maybeSingle(),
       supabase.from('incident_tasks').select('id, incident_id, title, priority, assigned_to, is_complete, created_at').eq('incident_id', id).order('id', { ascending: true }),
-      supabase.from('incident_messages').select('id, incident_id, user_id, sender_name, message, created_at').eq('incident_id', id).order('created_at', { ascending: true }),
-      supabase.from('incident_timeline').select('id, incident_id, actor, action, created_at').eq('incident_id', id).order('created_at', { ascending: true }),
+      supabase.from('incident_messages').select('id, incident_id, user_id, sender_name, message, created_at').eq('incident_id', id).order('created_at', { ascending: true }).limit(500),
+      supabase.from('incident_timeline').select('id, incident_id, actor, action, created_at').eq('incident_id', id).order('created_at', { ascending: true }).limit(500),
     ]);
 
     if (incError) throw incError;
@@ -112,6 +115,12 @@ export async function DELETE(request, { params }) {
     if (msgError) throw msgError;
     if (timeError) throw timeError;
     if (incError) throw incError;
+
+    try {
+      const { getIO } = require('@/lib/socket');
+      const io = getIO();
+      if (io) io.emit('incident:deleted', id);
+    } catch { /* socket not ready */ }
 
     return jsonNoStore({ message: 'Deleted' });
   } catch (err) {

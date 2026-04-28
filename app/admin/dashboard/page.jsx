@@ -32,7 +32,7 @@ function StatCard({ label, value, icon, sub, accentColor = '#E8EAF0', borderColo
           </span>
           <span
             className="font-black count-flip leading-none"
-            style={{ fontSize: 34, color: accentColor }}
+            style={{ fontSize: 'clamp(24px, 5vw, 34px)', color: accentColor }}
           >
             {value ?? '—'}
           </span>
@@ -83,6 +83,7 @@ function DashboardContent() {
   const router    = useRouter();
   const { incidents, fetchIncidents } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
+  const broadcasts = useSocketStore(s => s.broadcasts);
   const drillMode = useUIStore(s => s.drillMode);
   const toggleDrill = useUIStore(s => s.toggleDrillMode);
   const addToast  = useUIStore(s => s.addToast);
@@ -110,33 +111,33 @@ function DashboardContent() {
 
   useEffect(() => { load(); }, []);
 
-  const activeInc   = incidents.filter(i => i.status !== 'resolved');
-  const criticalInc = incidents.filter(i => i.severity === 'critical' && i.status !== 'resolved');
+  const activeInc   = (incidents || []).filter(i => i && i.status !== 'resolved');
+  const criticalInc = (incidents || []).filter(i => i && i.severity === 'critical' && i.status !== 'resolved');
 
   const filtered = filter === 'active'
-    ? incidents.filter(i => i.status !== 'resolved')
+    ? (incidents || []).filter(i => i && i.status !== 'resolved')
     : filter === 'resolved'
-      ? incidents.filter(i => i.status === 'resolved')
-      : incidents;
+      ? (incidents || []).filter(i => i && i.status === 'resolved')
+      : (incidents || []);
 
   const triggerDemo = async () => {
     setDemoing(true);
     try {
-      addToast({ message: `Phase 1: Intercepting SOS...`, type: 'info' });
-      await new Promise(r => setTimeout(r, 1000));
-      
-      addToast({ message: `Phase 2: AI Triage Analyzing...`, type: 'info' });
-      await new Promise(r => setTimeout(r, 1000));
+      addToast({ message: 'Launching demo incident...', type: 'info' });
 
-      const res = await fetch('/api/demo/trigger', { method: 'POST' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('crisislink_token') : '';
+      const res = await fetch('/api/demo/trigger', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
+      if (!res.ok || !data?.incident?.id) {
+        throw new Error(data?.error || 'Failed to generate demo incident');
+      }
       
-      addToast({ message: `Phase 3: Critical Alert Dispatched!`, type: 'success' });
-      
-      setTimeout(() => {
-        router.push(`/admin/incidents/${data.incident.id}`);
-      }, 1500);
-    } catch (e) { addToast({ message: 'Demo trigger failed', type: 'error' }); }
+      addToast({ message: 'Demo incident ready', type: 'success' });
+      router.push(`/admin/incidents/${data.incident.id}`);
+    } catch (e) { addToast({ message: e.message || 'Demo trigger failed', type: 'error' }); }
     finally { setDemoing(false); }
   };
 
@@ -206,7 +207,7 @@ function DashboardContent() {
                   {criticalInc.length} CRITICAL INCIDENT{criticalInc.length > 1 ? 'S' : ''} ACTIVE — Immediate Response Required
                 </p>
                 <p className="mono" style={{ fontSize: 10, color: 'rgba(230,57,70,0.60)', letterSpacing: '0.04em', marginTop: 2 }}>
-                  {criticalInc.map(i => i.zone).join(' · ')}
+                  {criticalInc.map(i => i?.zone || 'Unknown').join(' · ')}
                 </p>
               </div>
               <button
@@ -296,7 +297,7 @@ function DashboardContent() {
           {/* Stats */}
           <div>
             <SectionLabel>— COMMAND OVERVIEW</SectionLabel>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
                 label="Active Incidents"
                 value={activeInc.length}
@@ -391,13 +392,29 @@ function DashboardContent() {
               placeholder="Type a message for all staff..."
             />
             <p className="text-xs text-muted mt-2">{broadcastMessage.length}/280</p>
-            <button
-              onClick={sendBroadcast}
-              disabled={!broadcastMessage.trim() || sendingBroadcast}
-              className="mt-3 px-4 py-2 rounded-xl font-semibold text-sm text-white bg-red-500/85 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {sendingBroadcast ? 'Sending...' : 'Send to All Staff'}
-            </button>
+            <div className="flex items-center gap-3 mt-3">
+              <button
+                onClick={sendBroadcast}
+                disabled={!broadcastMessage.trim() || sendingBroadcast}
+                className="px-4 py-2 rounded-xl font-semibold text-sm text-white bg-red-500/85 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {sendingBroadcast ? 'Sending...' : 'Send to All Staff'}
+              </button>
+            </div>
+            
+            {broadcasts?.length > 0 && (
+              <div className="mt-6 pt-5 border-t border-white/10">
+                <h4 className="font-semibold text-white/80 text-sm mb-3">Recent Broadcasts (Session)</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {broadcasts.map((b, i) => (
+                    <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/5 flex gap-3 text-sm">
+                      <span className="text-white/40 text-xs min-w-16 whitespace-nowrap">{new Date(b.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-white/90">{b.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

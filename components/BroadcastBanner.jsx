@@ -5,13 +5,17 @@ export default function BroadcastBanner() {
   const [active, setActive] = useState(null);
 
   useEffect(() => {
+    let tv;
     const handler = (e) => {
       setActive(e.detail);
-      const tv = setTimeout(() => setActive(null), 8000);
-      return () => clearTimeout(tv);
+      if (tv) clearTimeout(tv);
+      tv = setTimeout(() => setActive(null), 8000);
     };
     window.addEventListener('crisislink:broadcast', handler);
-    return () => window.removeEventListener('crisislink:broadcast', handler);
+    return () => {
+      window.removeEventListener('crisislink:broadcast', handler);
+      if (tv) clearTimeout(tv);
+    };
   }, []);
 
   if (!active) return null;

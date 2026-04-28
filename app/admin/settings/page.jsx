@@ -5,6 +5,7 @@ import AppProviders from '@/components/AppProviders';
 import Sidebar from '@/components/Sidebar';
 import useAuthStore from '@/lib/stores/authStore';
 import useUIStore from '@/lib/stores/uiStore';
+import useIncidentStore from '@/lib/stores/incidentStore';
 
 export default function AdminSettingsPage() {
   return <AppProviders><SettingsContent /></AppProviders>;
@@ -24,12 +25,15 @@ function SettingsContent() {
   const [aiResult, setAiResult]   = useState(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [sending, setSending]     = useState(false);
+  const [broadcastHistory, setBroadcastHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [venueName, setVenueName] = useState('Grand Hotel & Resort');
   const [venueAddress, setVenueAddress] = useState('123 Ocean Drive');
   const [escalationTimeout, setEscalationTimeout] = useState(90);
   const [zones, setZones] = useState([]);
   const [newZone, setNewZone] = useState('');
   const [notifPermission, setNotifPermission] = useState('default');
+  const fetchZonesStore = useIncidentStore(s => s.fetchZones);
 
   useEffect(() => {
     if (loading) return;
@@ -57,11 +61,30 @@ function SettingsContent() {
     loadZones();
   }, []);
 
+  const fetchBroadcastHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch('/api/broadcast', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
+      });
+      const payload = await res.json();
+      if (res.ok) setBroadcastHistory(Array.isArray(payload) ? payload : []);
+    } catch (error) {
+      console.error('[Settings] broadcast history error', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBroadcastHistory();
+  }, []);
+
   const testAI = async () => {
     setTestingAI(true);
     setAiResult(null);
     try {
-      const res = await fetch('/api/ai-test', {
+      const res = await fetch('/api/health', {
         headers: { Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
       });
       const d = await res.json();
@@ -80,8 +103,13 @@ function SettingsContent() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('crisislink_token')}` },
         body: JSON.stringify({ message: broadcastMsg }),
       });
-      if (res.ok) { addToast({ message: 'Broadcast sent!', type: 'success' }); setBroadcastMsg(''); }
-      else addToast({ message: 'Broadcast failed', type: 'error' });
+      if (res.ok) {
+        addToast({ message: 'Broadcast sent!', type: 'success' });
+        setBroadcastMsg('');
+        fetchBroadcastHistory(); // refresh history
+      } else {
+        addToast({ message: 'Broadcast failed', type: 'error' });
+      }
     } catch { addToast({ message: 'Broadcast failed', type: 'error' }); }
     finally { setSending(false); }
   };
@@ -135,8 +163,9 @@ function SettingsContent() {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'Failed to add zone');
       setZones((prev) => [...prev, payload.zone]);
+      fetchZonesStore(); // Sync the global store so VenueMap reflects the change
       setNewZone('');
-      addToast({ message: 'Zone added', type: 'success' });
+      addToast({ message: 'Zone added — visible on Venue Map', type: 'success' });
     } catch (error) {
       addToast({ message: error.message || 'Failed to add zone', type: 'error' });
     }
@@ -151,6 +180,7 @@ function SettingsContent() {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'Failed to delete zone');
       setZones((prev) => prev.filter((z) => z.id !== zoneId));
+      fetchZonesStore(); // Keep global store in sync
       addToast({ message: 'Zone removed', type: 'success' });
     } catch (error) {
       addToast({ message: error.message || 'Failed to delete zone', type: 'error' });
@@ -173,8 +203,8 @@ function SettingsContent() {
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-grid">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3">
+      <main className="flex-1 overflow-y-auto bg-grid min-w-0">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3">
           <h1 className="font-bold text-white">Settings</h1>
           <p className="text-xs text-muted">System configuration and admin tools</p>
         </div>
@@ -289,6 +319,7 @@ function SettingsContent() {
                 placeholder="e.g. Please evacuate the south wing"
                 value={broadcastMsg}
                 onChange={e => setBroadcastMsg(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && sendBroadcast()}
               />
               <button
                 onClick={sendBroadcast}
@@ -297,6 +328,39 @@ function SettingsContent() {
               >
                 {sending ? '…' : 'Broadcast'}
               </button>
+            </div>
+
+            {/* Broadcast history */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-muted font-semibold uppercase tracking-wide">Recent Broadcasts</p>
+                <button
+                  onClick={fetchBroadcastHistory}
+                  disabled={loadingHistory}
+                  className="text-[10px] text-muted hover:text-white transition-colors"
+                >
+                  {loadingHistory ? 'Loading…' : '↻ Refresh'}
+                </button>
+              </div>
+              {broadcastHistory.length === 0 ? (
+                <p className="text-xs text-muted italic py-2">{loadingHistory ? 'Loading history…' : 'No broadcasts sent yet.'}</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {broadcastHistory.map((b) => (
+                    <div key={b.id} className="rounded-lg border border-white/10 bg-white/4 px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-white/85 leading-snug">{b.message}</p>
+                        <span className="flex-shrink-0 text-[9px] mono px-1.5 py-0.5 rounded bg-white/8 text-muted capitalize">
+                          {b.target_role}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted mt-1">
+                        {new Date(b.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Section>
 

@@ -25,16 +25,37 @@ const NAV_ADMIN = [
   { href: '/admin/map',       icon: '⬡',  emoji: '🗺️',  label: 'Venue Map' },
   { href: '/admin/analytics', icon: '▲',  emoji: '📈', label: 'Analytics' },
   { href: '/admin/settings',  icon: '⚙',  emoji: '⚙️',  label: 'Settings' },
+  { href: '/staff/drill',     icon: '*',  emoji: '🧪', label: 'Drill' },
   { href: '/qr',              icon: '#',  emoji: '📱', label: 'QR Codes' },
 ];
 const NAV_STAFF = [
   { href: '/staff/dashboard', icon: '◼', emoji: '📊', label: 'Dashboard' },
   { href: '/staff/incidents', icon: '!', emoji: '🚨', label: 'Incidents' },
-  { href: '/staff/drill', icon: '*', emoji: '🧪', label: 'Drill' },
+  { href: '/staff/map',       icon: '⬡', emoji: '🗺️', label: 'Venue Map' },
+  { href: '/staff/drill',     icon: '*', emoji: '🧪', label: 'Drill' },
 ];
+
+/* ── Mobile hamburger trigger (exported for use in page headers) ── */
+export function MobileMenuButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/8 transition-colors"
+      style={{ color: 'rgba(232,234,240,0.60)' }}
+      aria-label="Open navigation menu"
+    >
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="currentColor">
+        <rect y="0" width="18" height="2" rx="1"/>
+        <rect y="6" width="14" height="2" rx="1"/>
+        <rect y="12" width="18" height="2" rx="1"/>
+      </svg>
+    </button>
+  );
+}
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const user       = useAuthStore(s => s.user);
   const logout     = useAuthStore(s => s.logout);
   const connected  = useSocketStore(s => s.connected);
@@ -44,22 +65,22 @@ export default function Sidebar() {
   const incidents  = useIncidentStore(s => s.incidents);
 
   const activeCount = incidents.filter(i => i.status !== 'resolved').length;
-  const nav = user?.role === 'admin' ? NAV_ADMIN : NAV_STAFF;
+  const canAccessDrill = user?.role === 'admin' || user?.role === 'manager';
+  const baseNav = user?.role === 'admin' ? NAV_ADMIN : NAV_STAFF;
+  const nav = baseNav.filter((item) => item.label !== 'Drill' || canAccessDrill);
   const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??';
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
 
   const sidebarW = collapsed ? 56 : 220;
 
-  return (
+  const SidebarInner = (
     <aside
-      className="flex flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0"
+      className="flex flex-col h-full overflow-hidden flex-shrink-0"
       style={{
-        width: sidebarW,
-        transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
-        background: 'rgba(5,7,15,0.95)',
+        width: '100%',
+        background: 'rgba(5,7,15,0.98)',
         borderRight: '0.5px solid rgba(255,255,255,0.07)',
-        backdropFilter: 'blur(20px)',
       }}
     >
       {/* Logo area */}
@@ -77,12 +98,21 @@ export default function Sidebar() {
             </span>
           </div>
         )}
+        {/* Desktop collapse button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/5"
+          className="hidden lg:flex flex-shrink-0 items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/5"
           style={{ color: 'rgba(232,234,240,0.30)', fontSize: 11 }}
         >
           {collapsed ? '▶' : '◀'}
+        </button>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/5"
+          style={{ color: 'rgba(232,234,240,0.30)', fontSize: 14 }}
+        >
+          ✕
         </button>
       </div>
 
@@ -109,6 +139,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className="flex items-center rounded-lg transition-all relative group"
               style={{
                 height: 44,
@@ -201,5 +232,61 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* ── Desktop: fixed collapsible sidebar ── */}
+      <div
+        className="hidden lg:flex flex-col h-screen sticky top-0 flex-shrink-0 overflow-hidden"
+        style={{
+          width: sidebarW,
+          transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        {SidebarInner}
+      </div>
+
+      {/* ── Mobile: hamburger button (shown inside the sticky header of each page) ── */}
+      {/* The button to open the drawer is rendered by each page via MobileMenuButton, 
+          but we also expose a floating trigger here for pages that don't have a header */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-3 left-3 z-50 flex items-center justify-center w-10 h-10 rounded-xl"
+        style={{ background: 'rgba(5,7,15,0.90)', border: '0.5px solid rgba(255,255,255,0.10)', color: 'rgba(232,234,240,0.70)', backdropFilter: 'blur(12px)' }}
+        aria-label="Open menu"
+      >
+        ☰
+      </button>
+
+      {/* ── Mobile: drawer overlay ── */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex"
+          style={{ backdropFilter: 'blur(2px)' }}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Drawer */}
+          <div
+            className="relative flex flex-col"
+            style={{
+              width: 240,
+              height: '100%',
+              background: 'rgba(5,7,15,0.98)',
+              borderRight: '0.5px solid rgba(255,255,255,0.10)',
+              boxShadow: '8px 0 40px rgba(0,0,0,0.6)',
+              zIndex: 51,
+            }}
+          >
+            {SidebarInner}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

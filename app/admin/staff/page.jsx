@@ -185,7 +185,7 @@ function AdminStaffContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3 flex items-center">
           <h1 className="text-lg font-bold text-white">Staff Management</h1>
         </div>
 

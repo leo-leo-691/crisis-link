@@ -78,6 +78,9 @@ async function emitSafely(callback) {
 
 export async function GET(request) {
   try {
+    const user = getUserFromRequest(request);
+    if (!user) return jsonNoStore({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const severity = searchParams.get('severity');
@@ -85,7 +88,7 @@ export async function GET(request) {
     const type = searchParams.get('type');
     const isDrill = parseBooleanParam(searchParams.get('is_drill'));
     const all = searchParams.get('all') === 'true';
-    const limit = all ? null : Math.min(parseInt(searchParams.get('limit') || '50', 10), 50);
+    const limit = all ? 1000 : Math.min(parseInt(searchParams.get('limit') || '50', 10), 50);
 
     let query = supabase
       .from('incidents')

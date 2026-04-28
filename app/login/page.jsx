@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const DEMO_ACCOUNTS = [
   { email: 'admin@grandhotel.com', password: 'demo1234', name: 'Crisis Admin', role: 'admin' },
-  { email: 'manager@grandhotel.com', password: 'demo1234', name: 'Duty Manager', role: 'staff' },
+  { email: 'manager@grandhotel.com', password: 'demo1234', name: 'Duty Manager', role: 'manager' },
   { email: 'staff@grandhotel.com', password: 'demo1234', name: 'Response Staff', role: 'staff' },
   { email: 'security@grandhotel.com', password: 'demo1234', name: 'Marcus Rivera', role: 'staff' },
   { email: 'frontdesk@grandhotel.com', password: 'demo1234', name: 'Priya Sharma', role: 'staff' },

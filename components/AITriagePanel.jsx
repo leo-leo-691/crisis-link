@@ -13,7 +13,7 @@ export default function AITriagePanel({ triage, provider }) {
   return (
     <div className="glass p-5 space-y-4">
       <motion.h3 className="ai-panel-section font-semibold text-sm text-white" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 * 0.1 }}>
-        AI Triage Analysis <span className="text-xs text-muted">({provider || '—'})</span>
+        AI Triage Analysis
       </motion.h3>
       <motion.p className="ai-panel-section text-sm text-white/80" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 * 0.1 }}>{triage.brief_summary}</motion.p>
 

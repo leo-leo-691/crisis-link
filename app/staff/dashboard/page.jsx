@@ -19,6 +19,7 @@ function StaffContent() {
   const router  = useRouter();
   const { incidents, zones, fetchIncidents, fetchZones } = useIncidentStore();
   const connected = useSocketStore(s => s.connected);
+  const broadcasts = useSocketStore(s => s.broadcasts);
 
   const [ownFilter, setOwnFilter] = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
@@ -26,7 +27,7 @@ function StaffContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
+    if (!['staff', 'manager', 'admin'].includes(user.role)) { router.push('/'); }
   }, [loading, user, router]);
 
   const load = useCallback(async () => {
@@ -37,18 +38,25 @@ function StaffContent() {
   useEffect(() => { if (user) load(); }, [user, load]);
 
   const mine = ownFilter
-    ? incidents.filter(i => i.recommended_responder === user?.name)
-    : incidents.filter(i => i.status !== 'resolved');
-  const zoneIncidents = selectedZone ? incidents.filter(i => i.zone === selectedZone && i.status !== 'resolved') : [];
-  const todayCount = incidents.filter((i) => {
+    ? (incidents || []).filter(i => i && i.recommended_responder === user?.name)
+    : (incidents || []).filter(i => i && i.status !== 'resolved');
+  
+  const zoneIncidents = selectedZone 
+    ? (incidents || []).filter(i => i && i.zone === selectedZone && i.status !== 'resolved') 
+    : [];
+
+  const todayCount = (incidents || []).filter((i) => {
+    if (!i?.created_at) return false;
     const created = new Date(i.created_at);
     const now = new Date();
     return created.getFullYear() === now.getFullYear()
       && created.getMonth() === now.getMonth()
       && created.getDate() === now.getDate();
   }).length;
-  const activeCount = incidents.filter(i => i.status !== 'resolved').length;
-  const resolvedWithDuration = incidents.filter(i => i.resolved_at && i.created_at);
+
+  const activeCount = (incidents || []).filter(i => i && i.status !== 'resolved').length;
+  
+  const resolvedWithDuration = (incidents || []).filter(i => i && i.resolved_at && i.created_at);
   const avgResolutionMinutes = resolvedWithDuration.length
     ? Math.round(resolvedWithDuration.reduce((acc, i) => {
         return acc + ((new Date(i.resolved_at).getTime() - new Date(i.created_at).getTime()) / 60000);
@@ -59,7 +67,7 @@ function StaffContent() {
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid relative">
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3 flex items-center gap-4">
           <div>
             <h1 className="font-bold text-white">Staff Dashboard</h1>
             <p className="text-xs text-muted">Hello, {user?.name} · {user?.department}</p>
@@ -81,8 +89,8 @@ function StaffContent() {
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 h-[calc(100vh-72px)]">
-          <section className="space-y-4 min-h-0 overflow-y-auto pr-1">
+        <div className="p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-[calc(100vh-72px)] xl:overflow-hidden">
+          <section className="space-y-4 min-h-0 xl:overflow-y-auto pr-1">
             {/* Quick-action SOS card */}
             <div className="glass bg-steelblue/5 border-steelblue/20 p-5 flex items-center justify-between">
               <div>
@@ -122,28 +130,49 @@ function StaffContent() {
             )}
           </section>
 
-          <section className="min-h-0 flex flex-col gap-3">
-            <div className="glass p-3 flex-1 min-h-0">
-              <div className="h-full">
-                <VenueMap
-                  zones={zones}
-                  incidents={incidents}
-                  onZoneClick={(zone) => setSelectedZone(zone)}
-                />
+          <section className="min-h-0 flex flex-col gap-4">
+            <div className="hidden xl:flex glass p-4 lg:p-6 flex-1 min-h-[400px] overflow-hidden">
+              <div className="h-full w-full overflow-x-auto">
+                <div className="min-w-[600px] h-full flex flex-col justify-center">
+                  <VenueMap
+                    zones={zones}
+                    incidents={incidents}
+                    onZoneClick={(zone) => setSelectedZone(zone)}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Today: {todayCount}
-              </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Active: {activeCount}
-              </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-white/85">
-                Avg: {avgResolutionMinutes}m
-              </span>
+            <div className="mt-auto grid grid-cols-2 sm:flex sm:items-center gap-2 pt-2">
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Today</span>
+                <span className="text-sm font-bold text-white">{todayCount}</span>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Active</span>
+                <span className="text-sm font-bold text-white">{activeCount}</span>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:gap-2 col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-muted uppercase tracking-wider">Average</span>
+                <span className="text-sm font-bold text-white">{avgResolutionMinutes}m <span className="text-[10px] font-normal text-muted">res.</span></span>
+              </div>
             </div>
+
+            {broadcasts?.length > 0 && (
+              <div className="glass p-4 mt-1">
+                <h4 className="font-semibold text-white/80 text-sm mb-3">📢 Recent Broadcasts (Session)</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {broadcasts.map((b, i) => (
+                    <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/5 flex gap-3 text-sm">
+                      <span className="text-white/40 text-xs min-w-16 whitespace-nowrap">
+                        {new Date(b.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-white/90">{b.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </div>
 

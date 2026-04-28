@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase';
+import { getUserFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const user = getUserFromRequest(request);
+    if (!user || (user.role !== 'admin' && user.role !== 'staff')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const since = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString();
     const today = new Date().toISOString().slice(0, 10);
 

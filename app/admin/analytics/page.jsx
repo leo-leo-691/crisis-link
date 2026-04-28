@@ -76,7 +76,7 @@ function AnalyticsContent() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-grid">
         {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 px-6 py-3 flex items-center gap-4">
+        <div className="sticky top-0 z-20 bg-navy/80 backdrop-blur-xl border-b border-white/8 pl-14 lg:pl-6 pr-6 py-3 flex items-center gap-4">
           <div>
             <h1 className="font-bold text-white text-lg">Live Analytics</h1>
             <p className="text-xs text-muted">Incident insights &amp; venue heatmap</p>

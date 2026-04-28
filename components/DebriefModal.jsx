@@ -1,23 +1,53 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-// Syntax highlight markdown text for rendering in <pre> blocks
-function renderMarkdown(text) {
-  // Guard: coerce to string so .replace() never throws on undefined/null
-  const safe = typeof text === 'string' ? text : String(text ?? '');
-  return safe
-    .replace(/^## (.*)/gm, '<h2 class="text-base font-bold text-white mt-4 mb-2">$1</h2>')
-    .replace(/^### (.*)/gm, '<h3 class="text-sm font-semibold text-white/90 mt-3 mb-1">$1</h3>')
-    .replace(/^# (.*)/gm, '<h1 class="text-lg font-bold text-white mt-4 mb-2">$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-    .replace(/\*(.*?)\*/g,   '<em class="text-white/80 italic">$1</em>')
-    .replace(/^- (.*)/gm,   '<li class="ml-4 list-disc text-white/80">$1</li>')
-    .replace(/^\d+\. (.*)/gm, '<li class="ml-4 list-decimal text-white/80">$1</li>');
+// Safe markdown renderer — builds a React element tree without innerHTML
+function MarkdownLine({ line, idx }) {
+  // Headings
+  if (/^## (.+)/.test(line)) {
+    return <h2 key={idx} className="text-base font-bold text-white mt-4 mb-2">{line.slice(3)}</h2>;
+  }
+  if (/^### (.+)/.test(line)) {
+    return <h3 key={idx} className="text-sm font-semibold text-white/90 mt-3 mb-1">{line.slice(4)}</h3>;
+  }
+  if (/^# (.+)/.test(line)) {
+    return <h1 key={idx} className="text-lg font-bold text-white mt-4 mb-2">{line.slice(2)}</h1>;
+  }
+  // Bullet list
+  if (/^[-*] (.+)/.test(line)) {
+    return <li key={idx} className="ml-4 list-disc text-white/80">{renderInline(line.slice(2))}</li>;
+  }
+  // Numbered list
+  if (/^\d+\. (.+)/.test(line)) {
+    return <li key={idx} className="ml-4 list-decimal text-white/80">{renderInline(line.replace(/^\d+\. /, ''))}</li>;
+  }
+  // Blank line
+  if (!line.trim()) return <br key={idx} />;
+  // Normal paragraph
+  return <p key={idx} className="text-white/80">{renderInline(line)}</p>;
+}
+
+// Render inline bold/italic safely — returns an array of React nodes
+function renderInline(text) {
+  const parts = [];
+  // Split on **bold** or *italic*
+  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+  let last = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    if (match[0].startsWith('**')) {
+      parts.push(<strong key={match.index} className="text-white font-semibold">{match[2]}</strong>);
+    } else {
+      parts.push(<em key={match.index} className="text-white/80 italic">{match[3]}</em>);
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
 }
 
 export default function DebriefModal({ report, incidentId, onClose }) {
-  const ref = useRef(null);
-
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKey);
@@ -34,9 +64,11 @@ export default function DebriefModal({ report, incidentId, onClose }) {
     URL.revokeObjectURL(url);
   };
 
+  const lines = (typeof report === 'string' ? report : String(report ?? '')).split('\n');
+
   return (
     <div className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in">
-      <div ref={ref} className="glass-dark w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl">
+      <div className="glass-dark w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div>
@@ -58,13 +90,12 @@ export default function DebriefModal({ report, incidentId, onClose }) {
             </button>
           </div>
         </div>
-        {/* Content */}
+        {/* Content — safe rendering, no dangerouslySetInnerHTML */}
         <div className="flex-1 overflow-y-auto p-6">
           {report ? (
-            <div
-              className="text-sm text-white/80 space-y-1 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(report) }}
-            />
+            <div className="text-sm space-y-1 leading-relaxed">
+              {lines.map((line, idx) => <MarkdownLine key={idx} line={line} idx={idx} />)}
+            </div>
           ) : (
             <p className="text-sm text-red-400">⚠️ Debrief generation failed. Please try again.</p>
           )}

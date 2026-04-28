@@ -33,7 +33,7 @@ function IncidentsListContent() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push('/'); return; }
-    if (user.role !== 'staff' && user.role !== 'admin') { router.push('/'); }
+    if (!['staff', 'manager', 'admin'].includes(user.role)) { router.push('/'); }
   }, [loading, user, router]);
 
   const load = async () => {
@@ -53,12 +53,12 @@ function IncidentsListContent() {
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter(inc => {
-      const matchesSearch = 
+      const matchesSearch =
         inc.id.toLowerCase().includes(search.toLowerCase()) ||
         inc.type.toLowerCase().includes(search.toLowerCase()) ||
         inc.description?.toLowerCase().includes(search.toLowerCase()) ||
         inc.zone.toLowerCase().includes(search.toLowerCase());
-      
+
       const matchesStatus = statusFilter === 'all' || inc.status === statusFilter;
       const matchesSeverity = severityFilter === 'all' || inc.severity === severityFilter;
       const createdAt = inc.created_at ? new Date(inc.created_at) : null;
@@ -90,7 +90,7 @@ function IncidentsListContent() {
 
         <div className="flex-1 overflow-y-auto px-6 py-8">
           <div className="max-w-6xl mx-auto space-y-8">
-            
+
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
@@ -99,7 +99,7 @@ function IncidentsListContent() {
                 </p>
                 <h1 className="text-3xl font-black text-white">Incident Stream</h1>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <button
                   onClick={load}
@@ -121,8 +121,8 @@ function IncidentsListContent() {
             </div>
 
             {/* Filters Bar */}
-            <div 
-              className="p-4 rounded-2xl flex flex-col md:flex-row items-center gap-4 border border-white/5"
+            <div
+              className="p-4 rounded-2xl flex flex-col xl:flex-row items-center xl:items-end gap-4 border border-white/5"
               style={{ background: 'rgba(255,255,255,0.02)' }}
             >
               {/* Search */}
@@ -133,57 +133,69 @@ function IncidentsListContent() {
                   placeholder="Search by ID, type, or description..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50 transition-all"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50 transition-all"
                   style={{ fontSize: 14 }}
                 />
               </div>
 
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
-                style={{ fontSize: 14, minWidth: 150 }}
-              >
-                <option value="all">All Statuses</option>
-                <option value="reported">Reported</option>
-                <option value="acknowledged">Acknowledged</option>
-                <option value="responding">Responding</option>
-                <option value="contained">Contained</option>
-                <option value="resolved">Resolved</option>
-              </select>
+              {/* Status & Severity */}
+              <div className="flex w-full xl:w-auto gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="flex-1 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
+                  style={{ fontSize: 13 }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="reported">Reported</option>
+                  <option value="acknowledged">Acknowledged</option>
+                  <option value="responding">Responding</option>
+                  <option value="contained">Contained</option>
+                  <option value="resolved">Resolved</option>
+                </select>
 
-              {/* Severity Filter */}
-              <select
-                value={severityFilter}
-                onChange={e => setSeverityFilter(e.target.value)}
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
-                style={{ fontSize: 14, minWidth: 150 }}
-              >
-                <option value="all">All Severities</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+                <select
+                  value={severityFilter}
+                  onChange={e => setSeverityFilter(e.target.value)}
+                  className="flex-1 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all cursor-pointer dark-select"
+                  style={{ fontSize: 13 }}
+                >
+                  <option value="all">All Severities</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
 
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
-                style={{ fontSize: 14 }}
-              />
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
-                style={{ fontSize: 14 }}
-              />
+              {/* Dates */}
+              <div className="flex w-full xl:w-auto items-center gap-2">
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted px-1">From</span>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                    style={{ fontSize: 13 }}
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted px-1">To</span>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                    style={{ fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              {/* Export */}
               <button
                 onClick={exportJson}
-                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-sm"
+                className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-semibold xl:mb-0 mb-1"
               >
                 Export JSON
               </button>
@@ -212,11 +224,11 @@ function IncidentsListContent() {
                 <p className="text-white/40 max-w-sm mx-auto">No incidents match your current filtering criteria. Try adjusting your search or filters.</p>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredIncidents.map((inc, idx) => (
-                  <IncidentCard 
-                    key={inc.id} 
-                    incident={inc} 
+                  <IncidentCard
+                    key={inc.id}
+                    incident={inc}
                     index={idx}
                     onClick={() => router.push(`/staff/incident/${inc.id}`)}
                   />

@@ -55,7 +55,7 @@ app.prepare().then(() => {
     });
 
     socket.on('leave:incident', (incidentId) => {
-      socket.leave(`incident:${incidentId}`);
+      socket.leave(incidentId);
     });
 
     socket.on('disconnect', () => {
